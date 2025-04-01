@@ -1,10 +1,11 @@
 'use client';
 import Link from 'next/link';
 import { useState } from 'react';
-import { SignInButton, SignUpButton, SignedIn, SignedOut, UserButton } from '@clerk/nextjs';
+import { SignInButton, SignUpButton, SignedIn, SignedOut, UserButton, useUser } from '@clerk/nextjs';
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { isSignedIn } = useUser();
 
   return (
     <nav className="fixed w-full bg-white/80 backdrop-blur-md z-50 border-b border-gray-100">
@@ -19,39 +20,36 @@ export default function Navbar() {
 
           {/* Navigation Links */}
           <div className="hidden md:flex items-center space-x-8">
-            <Link href="/hotels" className="text-gray-600 hover:text-gray-900 transition-colors">
-              Hotels
+            <Link href="/" className="text-gray-600 hover:text-gray-900">
+              Home
             </Link>
-            <Link href="/deals" className="text-gray-600 hover:text-gray-900 transition-colors">
-              Deals
-            </Link>
-            <Link href="/about" className="text-gray-600 hover:text-gray-900 transition-colors">
+            <Link href="/about" className="text-gray-600 hover:text-gray-900">
               About
             </Link>
-            <Link href="/contact" className="text-gray-600 hover:text-gray-900 transition-colors">
+            <Link href="/contact" className="text-gray-600 hover:text-gray-900">
               Contact
             </Link>
           </div>
 
           {/* Auth Buttons */}
           <div className="flex items-center space-x-4">
-            <SignedIn>
-              <UserButton afterSignOutUrl="/" />
-            </SignedIn>
-            <SignedOut>
-              <div className="hidden md:flex items-center space-x-4">
-                <SignInButton mode="modal">
-                  <button className="text-gray-600 hover:text-gray-900 transition-colors">
-                    Sign in
-                  </button>
-                </SignInButton>
-                <SignUpButton mode="modal">
-                  <button className="px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors">
-                    Sign up
-                  </button>
-                </SignUpButton>
-              </div>
-            </SignedOut>
+            {isSignedIn ? (
+              <>
+                <Link
+                  href="/admin"
+                  className="text-gray-600 hover:text-gray-900"
+                >
+                  Admin
+                </Link>
+                <UserButton afterSignOutUrl="/" />
+              </>
+            ) : (
+              <SignInButton mode="modal">
+                <button className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
+                  Sign In
+                </button>
+              </SignInButton>
+            )}
             
             {/* Mobile Menu Button */}
             <button 
@@ -102,18 +100,11 @@ export default function Navbar() {
         >
           <div className="py-4 space-y-4">
             <Link 
-              href="/hotels" 
+              href="/" 
               className="block text-gray-600 hover:text-gray-900 transition-colors"
               onClick={() => setIsMenuOpen(false)}
             >
-              Hotels
-            </Link>
-            <Link 
-              href="/deals" 
-              className="block text-gray-600 hover:text-gray-900 transition-colors"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Deals
+              Home
             </Link>
             <Link 
               href="/about" 
