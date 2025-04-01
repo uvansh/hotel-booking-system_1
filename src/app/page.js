@@ -1,15 +1,21 @@
 'use client';
 
 import Image from 'next/image';
-import { Star, MapPin, Calendar } from 'lucide-react';
+import { MapPin, Calendar, SlidersHorizontal } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import HotelModal from '@/components/HotelModal';
+import HotelCard from '@/components/HotelCard';
 
 export default function Home() {
-  const [selectedHotel, setSelectedHotel] = useState(null);
   const [hotels, setHotels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState({
+    minPrice: '',
+    maxPrice: '',
+    minRating: '',
+    location: ''
+  });
 
   useEffect(() => {
     const fetchHotels = async () => {
@@ -29,6 +35,18 @@ export default function Home() {
 
     fetchHotels();
   }, []);
+
+  const filteredHotels = hotels.filter(hotel => {
+    const price = parseInt(hotel.price);
+    const rating = parseFloat(hotel.rating);
+    
+    if (filters.minPrice && price < parseInt(filters.minPrice)) return false;
+    if (filters.maxPrice && price > parseInt(filters.maxPrice)) return false;
+    if (filters.minRating && rating < parseFloat(filters.minRating)) return false;
+    if (filters.location && !hotel.location.toLowerCase().includes(filters.location.toLowerCase())) return false;
+    
+    return true;
+  });
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -52,7 +70,13 @@ export default function Home() {
           <div className="flex gap-4 bg-white/10 backdrop-blur-sm p-4 rounded-full animate-fade-in-delay-2">
             <div className="flex items-center gap-2">
               <MapPin className="w-5 h-5" />
-              <input type="text" placeholder="Where to?" className="bg-transparent outline-none text-white placeholder-white/70" />
+              <input 
+                type="text" 
+                placeholder="Where to?" 
+                className="bg-transparent outline-none text-white placeholder-white/70"
+                value={filters.location}
+                onChange={(e) => setFilters(prev => ({ ...prev, location: e.target.value }))}
+              />
             </div>
             <div className="flex items-center gap-2">
               <Calendar className="w-5 h-5" />
@@ -64,9 +88,70 @@ export default function Home() {
 
       {/* Hotel Grid Section */}
       <div className="container mx-auto px-4 py-16">
-        <h2 className="text-4xl font-bold mb-12 text-center animate-fade-in">
-          Featured Hotels
-        </h2>
+        <div className="flex justify-between items-center mb-8">
+          <h2 className="text-4xl font-bold animate-fade-in">
+            Featured Hotels
+          </h2>
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow"
+          >
+            <SlidersHorizontal className="w-5 h-5" />
+            <span>Filters</span>
+          </button>
+        </div>
+
+        {/* Filters Panel */}
+        {showFilters && (
+          <div className="bg-white p-6 rounded-lg shadow-md mb-8 animate-fade-in">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Min Price</label>
+                <input
+                  type="number"
+                  value={filters.minPrice}
+                  onChange={(e) => setFilters(prev => ({ ...prev, minPrice: e.target.value }))}
+                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="$0"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Max Price</label>
+                <input
+                  type="number"
+                  value={filters.maxPrice}
+                  onChange={(e) => setFilters(prev => ({ ...prev, maxPrice: e.target.value }))}
+                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="$1000"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Min Rating</label>
+                <input
+                  type="number"
+                  value={filters.minRating}
+                  onChange={(e) => setFilters(prev => ({ ...prev, minRating: e.target.value }))}
+                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="0"
+                  min="0"
+                  max="5"
+                  step="0.1"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                <input
+                  type="text"
+                  value={filters.location}
+                  onChange={(e) => setFilters(prev => ({ ...prev, location: e.target.value }))}
+                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter location"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
         {loading ? (
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
@@ -77,50 +162,15 @@ export default function Home() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {hotels.map((hotel, index) => (
-              <div
+            {filteredHotels.map((hotel, index) => (
+              <HotelCard
                 key={hotel._id}
-                onClick={() => setSelectedHotel(hotel)}
-                className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 group hover:-translate-y-1 animate-fade-in-up cursor-pointer"
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                <div className="relative h-56 overflow-hidden">
-                  <Image
-                    src={hotel.image}
-                    alt={hotel.name}
-                    fill
-                    className="object-cover group-hover:scale-110 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                </div>
-                <div className="p-6">
-                  <h3 className="font-semibold text-xl mb-2 group-hover:text-blue-600 transition-colors">{hotel.name}</h3>
-                  <div className="flex items-center gap-2 text-gray-600 mb-3">
-                    <MapPin className="w-4 h-4" />
-                    <span className="text-sm">{hotel.location}</span>
-                  </div>
-                  <div className="flex items-center gap-1 mb-4">
-                    <Star className="w-5 h-5 text-yellow-400 fill-current" />
-                    <span className="text-sm font-medium">{hotel.rating}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <p className="text-2xl font-bold text-blue-600">${hotel.price}</p>
-                    <span className="text-sm text-gray-500">/night</span>
-                  </div>
-                </div>
-              </div>
+                hotel={hotel}
+              />
             ))}
           </div>
         )}
       </div>
-
-      {/* Modal */}
-      {selectedHotel && (
-        <HotelModal
-          hotel={selectedHotel}
-          onClose={() => setSelectedHotel(null)}
-        />
-      )}
     </main>
   );
 }
