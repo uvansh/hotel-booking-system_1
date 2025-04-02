@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Search, SlidersHorizontal } from 'lucide-react';
+import { Plus, Trash2, Search, SlidersHorizontal, Calendar } from 'lucide-react';
 import { useAuth } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 
@@ -190,7 +190,25 @@ export default function AdminDashboard() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">Admin Dashboard</h1>
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+        <div className="flex gap-4">
+          <button
+            onClick={() => router.push('/admin/bookings')}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+          >
+            <Calendar className="w-5 h-5" />
+            <span>Manage Bookings</span>
+          </button>
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
+          >
+            <SlidersHorizontal className="w-5 h-5" />
+            <span>Filters</span>
+          </button>
+        </div>
+      </div>
       
       {/* Filters Section */}
       <div className="bg-white rounded-lg shadow-md p-6 mb-8">

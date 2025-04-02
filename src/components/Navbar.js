@@ -2,10 +2,15 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { SignInButton, SignUpButton, SignedIn, SignedOut, UserButton, useUser } from '@clerk/nextjs';
+import { Calendar } from 'lucide-react';
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { isSignedIn } = useUser();
+  const { isSignedIn, userId } = useUser();
+
+  // Check if user is admin
+  const adminUserIds = process.env.NEXT_PUBLIC_ADMIN_USER_IDS?.split(',') || [];
+  const isAdmin = isSignedIn && adminUserIds.includes(userId);
 
   return (
     <nav className="fixed w-full bg-white/80 backdrop-blur-md z-50 border-b border-gray-100">
@@ -36,11 +41,20 @@ export default function Navbar() {
             {isSignedIn ? (
               <>
                 <Link
-                  href="/admin"
-                  className="text-gray-600 hover:text-gray-900"
+                  href="/bookings"
+                  className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
                 >
-                  Admin
+                  <Calendar className="w-4 h-4" />
+                  <span>My Bookings</span>
                 </Link>
+                {isAdmin && (
+                  <Link
+                    href="/admin"
+                    className="text-gray-600 hover:text-gray-900"
+                  >
+                    Admin
+                  </Link>
+                )}
                 <UserButton afterSignOutUrl="/" />
               </>
             ) : (
@@ -99,41 +113,31 @@ export default function Navbar() {
           } overflow-hidden`}
         >
           <div className="py-4 space-y-4">
-            <Link 
-              href="/" 
-              className="block text-gray-600 hover:text-gray-900 transition-colors"
-              onClick={() => setIsMenuOpen(false)}
-            >
+            <Link href="/" className="block text-gray-600 hover:text-gray-900">
               Home
             </Link>
-            <Link 
-              href="/about" 
-              className="block text-gray-600 hover:text-gray-900 transition-colors"
-              onClick={() => setIsMenuOpen(false)}
-            >
+            <Link href="/about" className="block text-gray-600 hover:text-gray-900">
               About
             </Link>
-            <Link 
-              href="/contact" 
-              className="block text-gray-600 hover:text-gray-900 transition-colors"
-              onClick={() => setIsMenuOpen(false)}
-            >
+            <Link href="/contact" className="block text-gray-600 hover:text-gray-900">
               Contact
             </Link>
-            <div className="pt-4 border-t border-gray-100">
-              <SignedOut>
-                <SignInButton mode="modal">
-                  <button className="block w-full text-gray-600 hover:text-gray-900 transition-colors mb-2">
-                    Sign in
-                  </button>
-                </SignInButton>
-                <SignUpButton mode="modal">
-                  <button className="block w-full px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors text-center">
-                    Sign up
-                  </button>
-                </SignUpButton>
-              </SignedOut>
-            </div>
+            {isSignedIn && (
+              <>
+                <Link
+                  href="/bookings"
+                  className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+                >
+                  <Calendar className="w-4 h-4" />
+                  <span>My Bookings</span>
+                </Link>
+                {isAdmin && (
+                  <Link href="/admin" className="block text-gray-600 hover:text-gray-900">
+                    Admin
+                  </Link>
+                )}
+              </>
+            )}
           </div>
         </div>
       </div>

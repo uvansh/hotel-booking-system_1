@@ -5,12 +5,12 @@ import { useAuth } from '@clerk/nextjs';
 import { Star, MapPin, Calendar, Users } from 'lucide-react';
 
 export default function HotelCard({ hotel }) {
-  const { isSignedIn } = useAuth();
+  const { isSignedIn, userId } = useAuth();
   const [showModal, setShowModal] = useState(false);
   const [bookingData, setBookingData] = useState({
     checkIn: '',
     checkOut: '',
-    numberOfGuests: 1
+    guests: 1
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
@@ -43,6 +43,12 @@ export default function HotelCard({ hotel }) {
     setError(null);
 
     try {
+      // Debug logging
+      console.log('Submitting booking with data:', {
+        hotelId: hotel._id,
+        ...bookingData
+      });
+
       const response = await fetch('/api/bookings', {
         method: 'POST',
         headers: {
@@ -55,6 +61,7 @@ export default function HotelCard({ hotel }) {
       });
 
       const data = await response.json();
+      console.log('Booking response:', data);
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to create booking');
@@ -64,7 +71,7 @@ export default function HotelCard({ hotel }) {
       setBookingData({
         checkIn: '',
         checkOut: '',
-        numberOfGuests: 1
+        guests: 1
       });
       
       // Close modal after 2 seconds
@@ -208,8 +215,8 @@ export default function HotelCard({ hotel }) {
                         <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                         <input
                           type="number"
-                          name="numberOfGuests"
-                          value={bookingData.numberOfGuests}
+                          name="guests"
+                          value={bookingData.guests}
                           onChange={handleChange}
                           required
                           min="1"
@@ -248,14 +255,12 @@ export default function HotelCard({ hotel }) {
 
               <div className="mt-6">
                 <h3 className="text-lg font-semibold mb-2">Amenities</h3>
-                <div className="flex flex-wrap gap-2">
-                  {hotel.amenities.map((amenity, index) => (
-                    <span
-                      key={index}
-                      className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm"
-                    >
+                <div className="grid grid-cols-2 gap-2">
+                  {hotel.amenities?.map((amenity, index) => (
+                    <div key={index} className="flex items-center text-gray-600">
+                      <span className="mr-2">✓</span>
                       {amenity}
-                    </span>
+                    </div>
                   ))}
                 </div>
               </div>

@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
-import { Calendar, Users, DollarSign, Clock } from 'lucide-react';
+import { Calendar, Users, DollarSign, Clock, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
 
-export default function AdminBookings() {
+export default function UserBookings() {
   const { isSignedIn, userId } = useAuth();
   const router = useRouter();
   const [bookings, setBookings] = useState([]);
@@ -14,22 +14,20 @@ export default function AdminBookings() {
   const [filter, setFilter] = useState('all');
 
   useEffect(() => {
-    // Check if user is admin
-    const adminUserIds = process.env.NEXT_PUBLIC_ADMIN_USER_IDS?.split(',') || [];
-    if (!isSignedIn || !adminUserIds.includes(userId)) {
-      router.push('/');
+    if (!isSignedIn) {
+      router.push('/sign-in');
       return;
     }
 
     fetchBookings();
-  }, [isSignedIn, userId, router]);
+  }, [isSignedIn, router]);
 
   const fetchBookings = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      const response = await fetch('/api/admin/bookings');
+      const response = await fetch('/api/bookings');
       const data = await response.json();
 
       if (!response.ok) {
@@ -42,30 +40,6 @@ export default function AdminBookings() {
       setError(err.message || 'Failed to fetch bookings. Please try again.');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleStatusChange = async (bookingId, newStatus) => {
-    try {
-      const response = await fetch(`/api/admin/bookings/${bookingId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status: newStatus }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to update booking status');
-      }
-
-      // Refresh bookings after status update
-      fetchBookings();
-    } catch (err) {
-      console.error('Error updating booking:', err);
-      setError(err.message || 'Failed to update booking status. Please try again.');
     }
   };
 
@@ -89,6 +63,21 @@ export default function AdminBookings() {
     }
   };
 
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'pending':
+        return <Clock className="w-4 h-4" />;
+      case 'approved':
+        return <CheckCircle2 className="w-4 h-4" />;
+      case 'rejected':
+        return <XCircle className="w-4 h-4" />;
+      case 'cancelled':
+        return <AlertCircle className="w-4 h-4" />;
+      default:
+        return <AlertCircle className="w-4 h-4" />;
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -100,7 +89,7 @@ export default function AdminBookings() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Manage Bookings</h1>
+        <h1 className="text-3xl font-bold">My Bookings</h1>
         <div className="flex gap-4">
           <select
             value={filter}
@@ -150,25 +139,10 @@ export default function AdminBookings() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor(booking.status)}`}>
+                <span className={`px-3 py-1 rounded-full text-sm flex items-center gap-1 ${getStatusColor(booking.status)}`}>
+                  {getStatusIcon(booking.status)}
                   {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
                 </span>
-                {booking.status === 'pending' && (
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleStatusChange(booking._id, 'approved')}
-                      className="px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-                    >
-                      Approve
-                    </button>
-                    <button
-                      onClick={() => handleStatusChange(booking._id, 'rejected')}
-                      className="px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
-                    >
-                      Reject
-                    </button>
-                  </div>
-                )}
               </div>
             </div>
 
