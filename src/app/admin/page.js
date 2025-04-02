@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Search, SlidersHorizontal, Calendar, MapPin } from 'lucide-react';
+import { Plus, Trash2, Search, SlidersHorizontal, Calendar, MapPin, Star, Clock, Users, CheckCircle } from 'lucide-react';
 import { useAuth } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 
@@ -33,6 +33,9 @@ export default function AdminDashboard() {
     rooms: []
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [bookings, setBookings] = useState([]);
+  const [updatingStatus, setUpdatingStatus] = useState({});
+  const [statusError, setStatusError] = useState({});
 
   useEffect(() => {
     if (isLoaded) {
@@ -46,6 +49,7 @@ export default function AdminDashboard() {
         } else {
           fetchHotels();
           fetchDestinations();
+          fetchBookings();
         }
       }
     }
@@ -108,6 +112,21 @@ export default function AdminDashboard() {
       if (!response.ok) throw new Error('Failed to fetch hotels');
       const data = await response.json();
       setHotels(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchBookings = async () => {
+    try {
+      const response = await fetch('/api/bookings');
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch bookings');
+      }
+      setBookings(data);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -191,6 +210,35 @@ export default function AdminDashboard() {
       fetchHotels();
     } catch (err) {
       setError(err.message);
+    }
+  };
+
+  const handleStatusUpdate = async (bookingId, newStatus) => {
+    setUpdatingStatus(prev => ({ ...prev, [bookingId]: true }));
+    setStatusError(prev => ({ ...prev, [bookingId]: null }));
+
+    try {
+      const response = await fetch(`/api/bookings/${bookingId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update booking status');
+      }
+
+      // Refresh bookings to get updated status
+      fetchBookings();
+    } catch (err) {
+      console.error('Status update error:', err);
+      setStatusError(prev => ({ ...prev, [bookingId]: err.message }));
+    } finally {
+      setUpdatingStatus(prev => ({ ...prev, [bookingId]: false }));
     }
   };
 
@@ -448,6 +496,86 @@ export default function AdminDashboard() {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Bookings List */}
+      <div className="mt-8">
+        <h2 className="text-2xl font-semibold mb-4">Bookings</h2>
+        {bookings.length === 0 ? (
+          <div className="text-center py-12">
+            <h3 className="text-lg font-medium text-gray-900">No bookings found</h3>
+            <p className="mt-2 text-gray-500">There are no bookings to manage.</p>
+          </div>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {bookings.map((booking) => (
+              <div
+                key={booking._id}
+                className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300"
+              >
+                <div className="relative h-48">
+                  <img
+                    src={booking.hotel.image}
+                    alt={booking.hotel.name}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute top-2 right-2 bg-white px-2 py-1 rounded-full text-sm font-medium">
+                    ${booking.hotel.price}/night
+                  </div>
+                </div>
+                <div className="p-4">
+                  <h3 className="text-lg font-semibold mb-2">{booking.hotel.name}</h3>
+                  <div className="space-y-2 text-gray-600">
+                    <div className="flex items-center">
+                      <MapPin className="w-4 h-4 mr-2" />
+                      <span>{booking.hotel.location}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <Calendar className="w-4 h-4 mr-2" />
+                      <span>
+                        {new Date(booking.checkIn).toLocaleDateString()} -{' '}
+                        {new Date(booking.checkOut).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <div className="flex items-center">
+                      <Users className="w-4 h-4 mr-2" />
+                      <span>{booking.guests} guests</span>
+                    </div>
+                    <div className="flex items-center">
+                      <Clock className="w-4 h-4 mr-2" />
+                      <span className="capitalize">{booking.status}</span>
+                    </div>
+                  </div>
+
+                  {/* Status Update Section */}
+                  {booking.status !== 'completed' && (
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      <button
+                        onClick={() => handleStatusUpdate(booking._id, 'completed')}
+                        disabled={updatingStatus[booking._id]}
+                        className="w-full flex items-center justify-center gap-2 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {updatingStatus[booking._id] ? (
+                          'Updating...'
+                        ) : (
+                          <>
+                            <CheckCircle className="w-4 h-4" />
+                            Mark as Completed
+                          </>
+                        )}
+                      </button>
+                      {statusError[booking._id] && (
+                        <p className="text-red-500 text-sm mt-2">
+                          {statusError[booking._id]}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

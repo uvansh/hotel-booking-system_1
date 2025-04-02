@@ -3,51 +3,65 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
-import { Calendar, Users, DollarSign, Clock } from 'lucide-react';
+import { Calendar, Clock, MapPin, Users, CheckCircle } from 'lucide-react';
 
-export default function AdminBookings() {
-  const { isSignedIn, userId } = useAuth();
+export default function ManageBookings() {
+  const { isLoaded, userId, isSignedIn } = useAuth();
   const router = useRouter();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [filter, setFilter] = useState('all');
+  const [updatingStatus, setUpdatingStatus] = useState({});
+  const [statusError, setStatusError] = useState({});
+  const [filter, setFilter] = useState('all'); // all, pending, completed, cancelled
 
   useEffect(() => {
-    // Check if user is admin
-    const adminUserIds = process.env.NEXT_PUBLIC_ADMIN_USER_IDS?.split(',') || [];
-    if (!isSignedIn || !adminUserIds.includes(userId)) {
-      router.push('/');
-      return;
+    if (isLoaded) {
+      if (!isSignedIn) {
+        router.push('/admin/signup');
+      } else {
+        // Check if user is admin
+        const adminUserIds = process.env.NEXT_PUBLIC_ADMIN_USER_IDS?.split(',') || [];
+        if (!adminUserIds.includes(userId)) {
+          router.push('/');
+        } else {
+          fetchBookings();
+        }
+      }
     }
-
-    fetchBookings();
-  }, [isSignedIn, userId, router]);
+  }, [isLoaded, isSignedIn, userId, router]);
 
   const fetchBookings = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      const response = await fetch('/api/admin/bookings');
+      const response = await fetch('/api/bookings');
       const data = await response.json();
-
+      
       if (!response.ok) {
         throw new Error(data.error || 'Failed to fetch bookings');
+      }
+
+      if (!Array.isArray(data)) {
+        throw new Error('Invalid bookings data received');
       }
 
       setBookings(data);
     } catch (err) {
       console.error('Error fetching bookings:', err);
-      setError(err.message || 'Failed to fetch bookings. Please try again.');
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleStatusChange = async (bookingId, newStatus) => {
+  const handleStatusUpdate = async (bookingId, newStatus) => {
+    setUpdatingStatus(prev => ({ ...prev, [bookingId]: true }));
+    setStatusError(prev => ({ ...prev, [bookingId]: null }));
+
     try {
-      const response = await fetch(`/api/admin/bookings/${bookingId}`, {
+      const response = await fetch(`/api/bookings/${bookingId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -61,11 +75,13 @@ export default function AdminBookings() {
         throw new Error(data.error || 'Failed to update booking status');
       }
 
-      // Refresh bookings after status update
+      // Refresh bookings to get updated status
       fetchBookings();
     } catch (err) {
-      console.error('Error updating booking:', err);
-      setError(err.message || 'Failed to update booking status. Please try again.');
+      console.error('Status update error:', err);
+      setStatusError(prev => ({ ...prev, [bookingId]: err.message }));
+    } finally {
+      setUpdatingStatus(prev => ({ ...prev, [bookingId]: false }));
     }
   };
 
@@ -73,21 +89,6 @@ export default function AdminBookings() {
     if (filter === 'all') return true;
     return booking.status === filter;
   });
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'approved':
-        return 'bg-green-100 text-green-800';
-      case 'rejected':
-        return 'bg-red-100 text-red-800';
-      case 'cancelled':
-        return 'bg-gray-100 text-gray-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
 
   if (loading) {
     return (
@@ -109,8 +110,7 @@ export default function AdminBookings() {
           >
             <option value="all">All Bookings</option>
             <option value="pending">Pending</option>
-            <option value="approved">Approved</option>
-            <option value="rejected">Rejected</option>
+            <option value="completed">Completed</option>
             <option value="cancelled">Cancelled</option>
           </select>
         </div>
@@ -118,76 +118,109 @@ export default function AdminBookings() {
 
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md mb-6">
-          {error}
+          <p className="font-medium">Error:</p>
+          <p>{error}</p>
         </div>
       )}
 
-      <div className="grid gap-6">
-        {filteredBookings.map((booking) => (
-          <div
-            key={booking._id}
-            className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
-          >
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <h2 className="text-xl font-semibold mb-2">{booking.hotelId.name}</h2>
-                <div className="flex items-center gap-4 text-gray-600">
+      {!loading && bookings.length === 0 && (
+        <div className="text-center py-12">
+          <h3 className="text-lg font-medium text-gray-900">No bookings found</h3>
+          <p className="mt-2 text-gray-500">
+            {filter === 'all' 
+              ? 'There are no bookings to manage.'
+              : `No ${filter} bookings found.`}
+          </p>
+          <div className="mt-4">
+            <button
+              onClick={fetchBookings}
+              className="text-blue-600 hover:text-blue-800 underline"
+            >
+              Try refreshing
+            </button>
+          </div>
+        </div>
+      )}
+
+      {loading ? (
+        <div className="flex justify-center items-center min-h-[200px]">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
+        </div>
+      ) : (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {filteredBookings.map((booking) => (
+            <div
+              key={booking._id}
+              className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300"
+            >
+              <div className="relative h-48">
+                <img
+                  src={booking.hotel?.image || '/placeholder.jpg'}
+                  alt={booking.hotel?.name || 'Hotel'}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute top-2 right-2 bg-white px-2 py-1 rounded-full text-sm font-medium">
+                  ${booking.hotel?.price || 0}/night
+                </div>
+                <div className={`absolute top-2 left-2 px-2 py-1 rounded-full text-sm font-medium ${
+                  booking.status === 'completed' ? 'bg-green-100 text-green-800' :
+                  booking.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                  'bg-yellow-100 text-yellow-800'
+                }`}>
+                  {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+                </div>
+              </div>
+              <div className="p-4">
+                <h3 className="text-lg font-semibold mb-2">{booking.hotel?.name || 'Unnamed Hotel'}</h3>
+                <div className="space-y-2 text-gray-600">
                   <div className="flex items-center">
-                    <Calendar className="w-4 h-4 mr-1" />
+                    <MapPin className="w-4 h-4 mr-2" />
+                    <span>{booking.hotel?.location || 'Location not specified'}</span>
+                  </div>
+                  <div className="flex items-center">
+                    <Calendar className="w-4 h-4 mr-2" />
                     <span>
                       {new Date(booking.checkIn).toLocaleDateString()} -{' '}
                       {new Date(booking.checkOut).toLocaleDateString()}
                     </span>
                   </div>
                   <div className="flex items-center">
-                    <Users className="w-4 h-4 mr-1" />
-                    <span>{booking.numberOfGuests} guests</span>
+                    <Users className="w-4 h-4 mr-2" />
+                    <span>{booking.guests} guests</span>
                   </div>
                   <div className="flex items-center">
-                    <DollarSign className="w-4 h-4 mr-1" />
-                    <span>${booking.totalPrice}</span>
+                    <Clock className="w-4 h-4 mr-2" />
+                    <span>Booked on {new Date(booking.createdAt).toLocaleDateString()}</span>
                   </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor(booking.status)}`}>
-                  {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
-                </span>
-                {booking.status === 'pending' && (
-                  <div className="flex gap-2">
+
+                {/* Status Update Section */}
+                {booking.status !== 'completed' && (
+                  <div className="mt-4 pt-4 border-t border-gray-200">
                     <button
-                      onClick={() => handleStatusChange(booking._id, 'approved')}
-                      className="px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+                      onClick={() => handleStatusUpdate(booking._id, 'completed')}
+                      disabled={updatingStatus[booking._id]}
+                      className="w-full flex items-center justify-center gap-2 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Approve
+                      {updatingStatus[booking._id] ? (
+                        'Updating...'
+                      ) : (
+                        <>
+                          <CheckCircle className="w-4 h-4" />
+                          Mark as Completed
+                        </>
+                      )}
                     </button>
-                    <button
-                      onClick={() => handleStatusChange(booking._id, 'rejected')}
-                      className="px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
-                    >
-                      Reject
-                    </button>
+                    {statusError[booking._id] && (
+                      <p className="text-red-500 text-sm mt-2">
+                        {statusError[booking._id]}
+                      </p>
+                    )}
                   </div>
                 )}
               </div>
             </div>
-
-            <div className="text-sm text-gray-600">
-              <div className="flex items-center">
-                <Clock className="w-4 h-4 mr-1" />
-                <span>Booked on {new Date(booking.createdAt).toLocaleString()}</span>
-              </div>
-              <div className="mt-2">
-                <span className="font-medium">Location:</span> {booking.hotelId.location}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {filteredBookings.length === 0 && (
-        <div className="text-center text-gray-600 mt-8">
-          No bookings found for the selected filter.
+          ))}
         </div>
       )}
     </div>

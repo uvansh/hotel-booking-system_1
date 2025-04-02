@@ -8,25 +8,14 @@ export async function POST(request) {
   try {
     const { userId } = getAuth(request);
     if (!userId) {
-      console.log('No user ID found');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     await connectDB();
     const data = await request.json();
-    
-    // Debug logging
-    console.log('Received booking data:', data);
-    console.log('User ID:', userId);
 
     // Validate required fields
     if (!data.hotelId || !data.checkIn || !data.checkOut || !data.guests) {
-      console.log('Missing fields:', {
-        hotelId: !data.hotelId,
-        checkIn: !data.checkIn,
-        checkOut: !data.checkOut,
-        guests: !data.guests
-      });
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -36,7 +25,6 @@ export async function POST(request) {
     // Get hotel details
     const hotel = await Hotel.findById(data.hotelId);
     if (!hotel) {
-      console.log('Hotel not found for ID:', data.hotelId);
       return NextResponse.json({ error: 'Hotel not found' }, { status: 404 });
     }
 
@@ -59,7 +47,6 @@ export async function POST(request) {
       status: 'pending'
     });
 
-    console.log('Booking created successfully:', booking);
     return NextResponse.json(booking, { status: 201 });
   } catch (error) {
     console.error('Error creating booking:', error);
@@ -73,16 +60,44 @@ export async function POST(request) {
 export async function GET(request) {
   try {
     const { userId } = getAuth(request);
+    
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
     }
 
     await connectDB();
+    
+    // Fetch user's bookings and populate hotel details
     const bookings = await Booking.find({ userId })
-      .populate('hotelId')
+      .populate({
+        path: 'hotelId',
+        select: 'name location price image'
+      })
       .sort({ createdAt: -1 });
 
-    return NextResponse.json(bookings);
+    // Transform the data to match the expected format
+    const transformedBookings = bookings.map(booking => ({
+      _id: booking._id,
+      userId: booking.userId,
+      hotelId: booking.hotelId._id,
+      checkIn: booking.checkIn,
+      checkOut: booking.checkOut,
+      guests: booking.numberOfGuests,
+      status: booking.status,
+      createdAt: booking.createdAt,
+      hotel: {
+        _id: booking.hotelId._id,
+        name: booking.hotelId.name,
+        location: booking.hotelId.location,
+        price: booking.hotelId.price,
+        image: booking.hotelId.image
+      }
+    }));
+
+    return NextResponse.json(transformedBookings);
   } catch (error) {
     console.error('Error fetching bookings:', error);
     return NextResponse.json(

@@ -72,7 +72,7 @@ export default function Home() {
               <MapPin className="w-5 h-5" />
               <input 
                 type="text" 
-                placeholder="Where to?" 
+                placeholder="Where to go?" 
                 className="bg-transparent outline-none text-white placeholder-white/70"
                 value={filters.location}
                 onChange={(e) => setFilters(prev => ({ ...prev, location: e.target.value }))}

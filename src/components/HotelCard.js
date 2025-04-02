@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { Star, MapPin, Calendar, Users } from 'lucide-react';
+import { StarHalf } from 'lucide-react';
 
 export default function HotelCard({ hotel }) {
   const { isSignedIn, userId } = useAuth();
@@ -113,13 +114,22 @@ export default function HotelCard({ hotel }) {
             <MapPin className="w-4 h-4 mr-1" />
             <span>{hotel.location}</span>
           </div>
-          <div className="flex items-center text-gray-600">
-            <Star className="w-4 h-4 mr-1 text-yellow-400" />
-            <span>{hotel.rating}</span>
+          <div className="flex items-center text-gray-600 mb-4">
+            <div className="flex items-center">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <Star
+                  key={star}
+                  className={`w-4 h-4 ${
+                    star <= hotel.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
+                  }`}
+                />
+              ))}
+            </div>
+            <span className="ml-2 text-sm">({hotel.rating.toFixed(1)})</span>
           </div>
           <button
             onClick={() => setShowModal(true)}
-            className="mt-4 w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition-colors"
+            className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition-colors"
           >
             View Details
           </button>
@@ -158,8 +168,17 @@ export default function HotelCard({ hotel }) {
                       <span>{hotel.location}</span>
                     </div>
                     <div className="flex items-center text-gray-600">
-                      <Star className="w-5 h-5 mr-2 text-yellow-400" />
-                      <span>{hotel.rating} / 5</span>
+                      <div className="flex items-center">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star
+                            key={star}
+                            className={`w-5 h-5 ${
+                              star <= hotel.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <span className="ml-2">({hotel.rating.toFixed(1)})</span>
                     </div>
                     <div className="text-gray-600">
                       <p className="font-medium">${hotel.price}</p>

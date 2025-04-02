@@ -12,10 +12,26 @@ const HotelSchema = new mongoose.Schema({
   },
   rating: {
     type: Number,
-    required: [true, 'Please provide a rating'],
+    default: 0,
     min: [0, 'Rating cannot be less than 0'],
     max: [5, 'Rating cannot be more than 5'],
   },
+  ratings: [{
+    userId: {
+      type: String,
+      required: true
+    },
+    rating: {
+      type: Number,
+      required: true,
+      min: [0, 'Rating cannot be less than 0'],
+      max: [5, 'Rating cannot be more than 5']
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
   image: {
     type: String,
     required: [true, 'Please provide an image URL'],
@@ -65,6 +81,15 @@ const HotelSchema = new mongoose.Schema({
 // Update the updatedAt timestamp before saving
 HotelSchema.pre('save', function(next) {
   this.updatedAt = new Date();
+  next();
+});
+
+// Calculate average rating before saving
+HotelSchema.pre('save', function(next) {
+  if (this.ratings && this.ratings.length > 0) {
+    const sum = this.ratings.reduce((acc, curr) => acc + curr.rating, 0);
+    this.rating = sum / this.ratings.length;
+  }
   next();
 });
 

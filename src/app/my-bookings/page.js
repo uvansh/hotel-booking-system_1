@@ -2,13 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@clerk/nextjs';
-import { useRouter } from 'next/navigation';
-import { Star, Calendar, Clock, MapPin, Users, Building2, DollarSign } from 'lucide-react';
+import { Star, Calendar, Clock, MapPin, Users, CheckCircle, Building2, DollarSign } from 'lucide-react';
 import Link from 'next/link';
 
-export default function UserBookings() {
+export default function MyBookings() {
   const { isSignedIn, userId } = useAuth();
-  const router = useRouter();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -18,30 +16,26 @@ export default function UserBookings() {
   const [filter, setFilter] = useState('all');
 
   useEffect(() => {
-    if (!isSignedIn) {
-      router.push('/sign-in');
-      return;
+    console.log('Auth state:', { isSignedIn, userId });
+    if (isSignedIn) {
+      fetchBookings();
     }
-
-    fetchBookings();
-  }, [isSignedIn, router]);
+  }, [isSignedIn]);
 
   const fetchBookings = async () => {
+    console.log('Fetching bookings...');
     try {
-      setLoading(true);
-      setError(null);
-      
       const response = await fetch('/api/bookings');
       const data = await response.json();
+      console.log('Bookings data:', data);
       
       if (!response.ok) {
         throw new Error(data.error || 'Failed to fetch bookings');
       }
-
       setBookings(data);
     } catch (err) {
       console.error('Error fetching bookings:', err);
-      setError(err.message || 'Failed to fetch bookings. Please try again.');
+      setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -81,12 +75,39 @@ export default function UserBookings() {
     return booking.status === filter;
   });
 
+  if (!isSignedIn) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center">
+            <h2 className="text-3xl font-extrabold text-gray-900">
+              Please sign in to view your bookings
+            </h2>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-center items-center min-h-[400px]">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center">
+            <h2 className="text-3xl font-extrabold text-gray-900">Error</h2>
+            <p className="mt-2 text-red-600">{error}</p>
           </div>
         </div>
       </div>
@@ -114,12 +135,6 @@ export default function UserBookings() {
             </select>
           </div>
         </div>
-
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md mb-6">
-            {error}
-          </div>
-        )}
 
         {bookings.length === 0 ? (
           <div className="bg-white rounded-lg shadow-sm p-8 text-center">
