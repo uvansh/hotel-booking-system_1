@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { SignInButton, SignUpButton, SignedIn, SignedOut, UserButton, useUser } from '@clerk/nextjs';
 import { Calendar, MapPin, Tag, Newspaper } from 'lucide-react';
-
+import { Hotel } from 'lucide-react';
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { isSignedIn, userId } = useUser();
@@ -18,9 +18,12 @@ export default function Navbar() {
         <div className="flex flex-row items-center justify-between gap-3 md:gap-0 h-20">
           {/* Logo */}
           <Link href="/" className="flex items-center">
-            <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-              Nestio
+            <div className='flex items-center gap-1'>
+            <Hotel className="w-6 h-6" color='blue' /> 
+            <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent italic">
+            Nestio.
             </span>
+            </div>
           </Link>
 
           {/* Navigation Links */}
