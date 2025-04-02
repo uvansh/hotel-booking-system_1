@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@clerk/nextjs';
-import { Star, Calendar, Clock, MapPin, Users, CheckCircle, Building2, DollarSign } from 'lucide-react';
+import { Star, Calendar, MapPin, Users, Building2, DollarSign } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function MyBookings() {
   const { isSignedIn, userId } = useAuth();
@@ -20,7 +21,7 @@ export default function MyBookings() {
     if (isSignedIn) {
       fetchBookings();
     }
-  }, [isSignedIn]);
+  }, [isSignedIn, userId]);
 
   const fetchBookings = async () => {
     console.log('Fetching bookings...');
@@ -158,11 +159,12 @@ export default function MyBookings() {
                 className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-300"
               >
                 <div className="flex flex-col md:flex-row">
-                  <div className="md:w-1/3">
-                    <img
+                  <div className="md:w-1/3 relative h-48 md:h-full">
+                    <Image
                       src={booking.hotel?.image || '/placeholder.jpg'}
                       alt={booking.hotel?.name || 'Hotel'}
-                      className="w-full h-48 md:h-full object-cover"
+                      fill
+                      className="object-cover"
                     />
                   </div>
                   <div className="flex-1 p-6">

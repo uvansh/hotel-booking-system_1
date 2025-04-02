@@ -1,12 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { useAuth } from '@clerk/nextjs';
 import { Star, MapPin, Calendar, Users } from 'lucide-react';
 import Image from 'next/image';
 
 export default function HotelCard({ hotel }) {
-  const { isSignedIn } = useAuth();
   const [showModal, setShowModal] = useState(false);
   const [bookingData, setBookingData] = useState({
     checkIn: '',

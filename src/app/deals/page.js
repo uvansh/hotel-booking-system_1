@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useAuth } from '@clerk/nextjs';
+import Image from 'next/image';
 import { Star, MapPin, DollarSign, Calendar } from 'lucide-react';
 import Link from 'next/link';
 
@@ -81,11 +81,12 @@ export default function Deals() {
                 key={hotel._id}
                 className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-300"
               >
-                <div className="relative">
-                  <img
-                    src={hotel.image || '/placeholder.jpg'}
-                    alt={hotel.name}
-                    className="w-full h-48 object-cover"
+                <div className="relative h-48">
+                  <Image
+                    src={hotel?.image || '/placeholder.jpg'}
+                    alt={hotel?.name || 'Hotel'}
+                    fill
+                    className="object-cover"
                   />
                   <div className="absolute top-2 right-2 bg-red-600 text-white px-2 py-1 rounded-full text-sm font-medium">
                     Special Deal

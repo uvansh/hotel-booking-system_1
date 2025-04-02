@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
-import { Star, MapPin, DollarSign, Calendar, Users, Building2, ChevronLeft, ChevronRight } from 'lucide-react';
-import Link from 'next/link';
+import { Star, MapPin, DollarSign, Users} from 'lucide-react';
 import { useAuth } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 const HotelDetails = () => {
   const params = useParams();
@@ -14,18 +14,13 @@ const HotelDetails = () => {
   const [hotel, setHotel] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [bookingData, setBookingData] = useState({
     checkIn: '',
     checkOut: '',
     guests: 1
   });
 
-  useEffect(() => {
-    fetchHotelDetails();
-  }, [params.id]);
-
-  const fetchHotelDetails = async () => {
+  const fetchHotelDetails = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -44,7 +39,11 @@ const HotelDetails = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [params.id]);
+
+  useEffect(() => {
+    fetchHotelDetails();
+  }, [fetchHotelDetails]);
 
   const handleBooking = async (e) => {
     e.preventDefault();
@@ -118,12 +117,15 @@ const HotelDetails = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
+
       {/* Hero Section */}
       <div className="relative h-[500px] rounded-lg overflow-hidden mb-8">
-        <img
+        <Image
           src={hotel.image || '/placeholder.jpg'}
           alt={hotel.name}
-          className="w-full h-full object-cover"
+          fill
+          className="object-cover"
+          priority
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 to-black/40 flex items-center justify-center">
           <div className="text-center text-white">
@@ -140,6 +142,7 @@ const HotelDetails = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {/* Left Column - Main Info */}
         <div className="md:col-span-2 space-y-8">
+
           {/* Description */}
           <div className="bg-white p-6 rounded-lg shadow-md">
             <h2 className="text-2xl font-semibold mb-4">About</h2>

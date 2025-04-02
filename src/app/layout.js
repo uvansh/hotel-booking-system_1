@@ -3,6 +3,7 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 import { ClerkProvider } from '@clerk/nextjs';
 import { neobrutalism } from '@clerk/themes';
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -15,16 +16,13 @@ const geistMono = Geist_Mono({
 
 export const metadata = {
   title: "Nestio.",
-  description: "A affordable and fast hotel booking site.",
+  description: "An affordable and fast hotel booking site.",
 };
 
 export default function RootLayout({ children }) {
   return (
     <ClerkProvider 
     appearance={{
-      variables:{
-        
-      },
         baseTheme: neobrutalism,
       }}
       >

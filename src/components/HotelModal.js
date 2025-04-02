@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import { Star, MapPin, Calendar, X } from 'lucide-react';
+import { Star, MapPin, X } from 'lucide-react';
 
 export default function HotelModal({ hotel, onClose }) {
   return (
