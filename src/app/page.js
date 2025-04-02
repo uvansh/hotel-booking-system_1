@@ -56,7 +56,7 @@ export default function Home() {
           src="https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=2070&auto=format&fit=crop"
           alt="Hotel Banner"
           fill
-          className="object-cover brightness-50"
+          className="object-cover brightness-70"
           priority
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/50 to-black/20" />
