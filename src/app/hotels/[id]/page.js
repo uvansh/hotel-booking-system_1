@@ -5,10 +5,12 @@ import { useParams } from 'next/navigation';
 import { Star, MapPin, DollarSign, Calendar, Users, Building2, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@clerk/nextjs';
+import { useRouter } from 'next/navigation';
 
 const HotelDetails = () => {
   const params = useParams();
   const { isSignedIn } = useAuth();
+  const router = useRouter();
   const [hotel, setHotel] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -47,11 +49,17 @@ const HotelDetails = () => {
   const handleBooking = async (e) => {
     e.preventDefault();
     if (!isSignedIn) {
-      // Handle not signed in case
+      router.push('/sign-in');
       return;
     }
 
     try {
+      // Calculate total price
+      const checkInDate = new Date(bookingData.checkIn);
+      const checkOutDate = new Date(bookingData.checkOut);
+      const nights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
+      const totalPrice = hotel.price * nights * bookingData.guests;
+
       const response = await fetch('/api/bookings', {
         method: 'POST',
         headers: {
@@ -59,20 +67,24 @@ const HotelDetails = () => {
         },
         body: JSON.stringify({
           hotelId: params.id,
-          ...bookingData,
+          checkIn: bookingData.checkIn,
+          checkOut: bookingData.checkOut,
+          numberOfGuests: bookingData.guests,
+          totalPrice,
         }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const data = await response.json();
         throw new Error(data.error || 'Failed to create booking');
       }
 
       // Handle successful booking
-      alert('Booking created successfully!');
+      router.push('/bookings');
     } catch (err) {
       console.error('Error creating booking:', err);
-      alert(err.message || 'Failed to create booking');
+      setError(err.message || 'Failed to create booking');
     }
   };
 

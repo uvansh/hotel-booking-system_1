@@ -3,10 +3,10 @@
 import { useState } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { Star, MapPin, Calendar, Users } from 'lucide-react';
-import { StarHalf } from 'lucide-react';
+import Image from 'next/image';
 
 export default function HotelCard({ hotel }) {
-  const { isSignedIn, userId } = useAuth();
+  const { isSignedIn } = useAuth();
   const [showModal, setShowModal] = useState(false);
   const [bookingData, setBookingData] = useState({
     checkIn: '',
@@ -16,39 +16,19 @@ export default function HotelCard({ hotel }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+  const [hasSubmitted, setHasSubmitted] = useState(false);
 
   const handleBookingSubmit = async (e) => {
     e.preventDefault();
-    if (!isSignedIn) {
-      setError('Please sign in to make a booking');
-      return;
-    }
-
-    // Validate dates
-    const checkInDate = new Date(bookingData.checkIn);
-    const checkOutDate = new Date(bookingData.checkOut);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    if (checkInDate < today) {
-      setError('Check-in date cannot be in the past');
-      return;
-    }
-
-    if (checkOutDate <= checkInDate) {
-      setError('Check-out date must be after check-in date');
-      return;
-    }
-
     setIsSubmitting(true);
     setError(null);
 
     try {
-      // Debug logging
-      console.log('Submitting booking with data:', {
-        hotelId: hotel._id,
-        ...bookingData
-      });
+      // Calculate total price
+      const checkInDate = new Date(bookingData.checkIn);
+      const checkOutDate = new Date(bookingData.checkOut);
+      const nights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
+      const totalPrice = hotel.price * nights * bookingData.guests;
 
       const response = await fetch('/api/bookings', {
         method: 'POST',
@@ -57,18 +37,21 @@ export default function HotelCard({ hotel }) {
         },
         body: JSON.stringify({
           hotelId: hotel._id,
-          ...bookingData,
+          checkIn: bookingData.checkIn,
+          checkOut: bookingData.checkOut,
+          numberOfGuests: bookingData.guests,
+          totalPrice,
         }),
       });
 
       const data = await response.json();
-      console.log('Booking response:', data);
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to create booking');
       }
 
       setSuccess(true);
+      setHasSubmitted(true);
       setBookingData({
         checkIn: '',
         checkOut: '',
@@ -81,7 +64,6 @@ export default function HotelCard({ hotel }) {
         setSuccess(false);
       }, 2000);
     } catch (err) {
-      console.error('Booking error:', err);
       setError(err.message || 'Failed to create booking. Please try again.');
     } finally {
       setIsSubmitting(false);
@@ -91,18 +73,25 @@ export default function HotelCard({ hotel }) {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setBookingData(prev => ({ ...prev, [name]: value }));
-    // Clear error when user makes changes
     setError(null);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setError(null);
+    setSuccess(false);
   };
 
   return (
     <>
       <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
         <div className="relative h-48">
-          <img
-            src={hotel.image}
+          <Image
+            src={hotel.image || '/placeholder.jpg'}
             alt={hotel.name}
-            className="w-full h-full object-cover"
+            fill
+            className="object-cover"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
           <div className="absolute top-2 right-2 bg-white px-2 py-1 rounded-full text-sm font-medium">
             ${hotel.price}/night
@@ -136,7 +125,6 @@ export default function HotelCard({ hotel }) {
         </div>
       </div>
 
-      {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -144,11 +132,7 @@ export default function HotelCard({ hotel }) {
               <div className="flex justify-between items-start mb-6">
                 <h2 className="text-2xl font-bold">{hotel.name}</h2>
                 <button
-                  onClick={() => {
-                    setShowModal(false);
-                    setError(null);
-                    setSuccess(false);
-                  }}
+                  onClick={handleCloseModal}
                   className="text-gray-500 hover:text-gray-700"
                 >
                   ✕
@@ -157,11 +141,15 @@ export default function HotelCard({ hotel }) {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <img
-                    src={hotel.image}
-                    alt={hotel.name}
-                    className="w-full h-64 object-cover rounded-lg mb-4"
-                  />
+                  <div className="relative h-64 mb-4">
+                    <Image
+                      src={hotel.image || '/placeholder.jpg'}
+                      alt={hotel.name}
+                      fill
+                      className="object-cover rounded-lg"
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                    />
+                  </div>
                   <div className="space-y-2">
                     <div className="flex items-center text-gray-600">
                       <MapPin className="w-5 h-5 mr-2" />
@@ -252,16 +240,16 @@ export default function HotelCard({ hotel }) {
 
                     {success && (
                       <div className="bg-green-50 text-green-600 p-3 rounded-md text-sm">
-                        Booking request submitted successfully! You will be notified when it's approved.
+                        Booking request submitted successfully! You will be notified when it&apos;s approved.
                       </div>
                     )}
 
                     <button
                       type="submit"
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || hasSubmitted}
                       className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {isSubmitting ? 'Submitting...' : 'Submit Booking Request'}
+                      {isSubmitting ? 'Submitting...' : hasSubmitted ? 'Booking Submitted' : 'Submit Booking Request'}
                     </button>
                   </form>
                 </div>

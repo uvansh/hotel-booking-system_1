@@ -1,100 +1,83 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Booking from '@/models/Booking';
-import { getAuth } from '@clerk/nextjs/server';
 import Hotel from '@/models/Hotel';
+import { getAuth } from '@clerk/nextjs/server';
 
-export async function POST(request) {
+export async function POST(req) {
   try {
-    const { userId } = getAuth(request);
+    const { userId } = getAuth(req);
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await connectDB();
-    const data = await request.json();
+    const body = await req.json();
+    const { hotelId, checkIn, checkOut, guests } = body;
 
-    // Validate required fields
-    if (!data.hotelId || !data.checkIn || !data.checkOut || !data.guests) {
+    await connectDB();
+
+    // Check for existing booking with same dates and hotel
+    const existingBooking = await Booking.findOne({
+      hotelId,
+      userId,
+      checkIn,
+      checkOut,
+      status: { $ne: 'cancelled' }
+    });
+
+    if (existingBooking) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'You already have a booking for these dates' },
         { status: 400 }
       );
     }
 
-    // Get hotel details
-    const hotel = await Hotel.findById(data.hotelId);
-    if (!hotel) {
-      return NextResponse.json({ error: 'Hotel not found' }, { status: 404 });
-    }
-
-    // Calculate number of nights
-    const checkInDate = new Date(data.checkIn);
-    const checkOutDate = new Date(data.checkOut);
-    const nights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
-
-    // Calculate total price
-    const totalPrice = hotel.price * nights;
-
-    // Create booking with field names matching the model
+    // Create new booking
     const booking = await Booking.create({
-      hotelId: data.hotelId,
-      userId: userId,
-      checkIn: checkInDate,
-      checkOut: checkOutDate,
-      numberOfGuests: parseInt(data.guests),
-      totalPrice,
+      ...body,
+      userId,
       status: 'pending'
     });
 
     return NextResponse.json(booking, { status: 201 });
   } catch (error) {
-    console.error('Error creating booking:', error);
+    console.error('Booking creation error:', error);
     return NextResponse.json(
-      { error: error.message || 'Failed to create booking' },
+      { error: 'Failed to create booking' },
       { status: 500 }
     );
   }
 }
 
-export async function GET(request) {
+export async function GET(req) {
   try {
-    const { userId } = getAuth(request);
-    
+    const { userId } = getAuth(req);
     if (!userId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     await connectDB();
-    
-    // Fetch user's bookings and populate hotel details
+
+    // Fetch all bookings for the user and populate hotel details
     const bookings = await Booking.find({ userId })
-      .populate({
-        path: 'hotelId',
-        select: 'name location price image'
-      })
+      .populate('hotelId', 'name location price image')
       .sort({ createdAt: -1 });
 
-    // Transform the data to match the expected format
+    // Transform the data to match the frontend expectations
     const transformedBookings = bookings.map(booking => ({
       _id: booking._id,
-      userId: booking.userId,
-      hotelId: booking.hotelId._id,
-      checkIn: booking.checkIn,
-      checkOut: booking.checkOut,
-      guests: booking.numberOfGuests,
-      status: booking.status,
-      createdAt: booking.createdAt,
       hotel: {
         _id: booking.hotelId._id,
         name: booking.hotelId.name,
         location: booking.hotelId.location,
         price: booking.hotelId.price,
         image: booking.hotelId.image
-      }
+      },
+      checkIn: booking.checkIn,
+      checkOut: booking.checkOut,
+      guests: booking.guests,
+      status: booking.status,
+      createdAt: booking.createdAt
     }));
 
     return NextResponse.json(transformedBookings);
