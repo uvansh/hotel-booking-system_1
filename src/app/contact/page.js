@@ -64,7 +64,7 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <h3 className="font-semibold text-gray-900">Phone</h3>
-                  <p className="text-gray-700">+1 (555) 123-4567</p>
+                  <p className="text-gray-700">+91 8429000002</p>
                 </div>
               </div>
 
@@ -89,7 +89,7 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <h3 className="font-semibold text-gray-900">Address</h3>
-                  <p className="text-gray-700">123 Hotel Street, City, Country</p>
+                  <p className="text-gray-700">H-173 City Apartment, kanpur, India</p>
                 </div>
               </div>
             </div>
