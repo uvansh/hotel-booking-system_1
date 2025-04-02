@@ -27,7 +27,7 @@ export default function Navbar() {
           </Link>
 
           {/* Navigation Links */}
-          <div className="hidden md:flex items-center space-x-8">
+          <div className="hidden md:flex items-center gap-6">
             <Link href="/" className="text-gray-600 hover:text-gray-900">
               Home
             </Link>
@@ -36,9 +36,6 @@ export default function Navbar() {
             </Link>
             <Link href="/deals" className="text-gray-600 hover:text-gray-900">
               Deals
-            </Link>
-            <Link href="/blog" className="text-gray-600 hover:text-gray-900">
-              Blog
             </Link>
             <Link href="/about" className="text-gray-600 hover:text-gray-900">
               About
@@ -135,10 +132,6 @@ export default function Navbar() {
             <Link href="/deals" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
               <Tag className="w-4 h-4" />
               <span>Deals</span>
-            </Link>
-            <Link href="/blog" className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
-              <Newspaper className="w-4 h-4" />
-              <span>Blog</span>
             </Link>
             <Link href="/about" className="block text-gray-600 hover:text-gray-900">
               About
