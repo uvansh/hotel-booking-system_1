@@ -103,4 +103,49 @@ export async function GET(req) {
       { status: 500 }
     );
   }
+}
+
+export async function PATCH(request) {
+  try {
+    const { userId } = getAuth(request);
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { bookingId, status } = await request.json();
+
+    if (!bookingId || !status) {
+      return NextResponse.json(
+        { error: 'Booking ID and status are required' },
+        { status: 400 }
+      );
+    }
+
+    await connectDB();
+
+    // Find the booking and verify ownership
+    const booking = await Booking.findOne({ _id: bookingId, userId });
+    
+    if (!booking) {
+      return NextResponse.json(
+        { error: 'Booking not found or unauthorized' },
+        { status: 404 }
+      );
+    }
+
+    // Update the booking status
+    booking.status = status;
+    await booking.save();
+
+    return NextResponse.json(
+      { message: 'Booking status updated successfully', booking },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error('Error updating booking status:', error);
+    return NextResponse.json(
+      { error: 'Failed to update booking status' },
+      { status: 500 }
+    );
+  }
 } 

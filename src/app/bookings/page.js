@@ -17,6 +17,8 @@ export default function UserBookings() {
   const [isRating, setIsRating] = useState({});
   const [ratingError, setRatingError] = useState({});
   const [filter, setFilter] = useState('all');
+  const [cancellingBooking, setCancellingBooking] = useState({});
+  const [cancellationError, setCancellationError] = useState({});
 
   const fetchBookings = async () => {
     try {
@@ -59,17 +61,10 @@ export default function UserBookings() {
   }, [bookings]);
 
   const handleRatingSubmit = async (hotelId, rating) => {
-    // Check if user has already rated this hotel
-    if (userRatings[hotelId]) {
-      setRatingError(prev => ({ ...prev, [hotelId]: 'You have already rated this hotel' }));
-      return;
-    }
-
     setIsRating(prev => ({ ...prev, [hotelId]: true }));
     setRatingError(prev => ({ ...prev, [hotelId]: null }));
 
     try {
-      console.log('Submitting rating:', { hotelId, rating });
       const response = await fetch(`/api/hotels/${hotelId}/rate`, {
         method: 'POST',
         headers: {
@@ -79,35 +74,50 @@ export default function UserBookings() {
       });
 
       const data = await response.json();
-      console.log('Rating API response:', data);
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to submit rating');
       }
 
-      // Update local state to mark this hotel as rated
       setUserRatings(prev => ({ ...prev, [hotelId]: rating }));
-      
-      // Update the hotel rating in the bookings list
-      setBookings(prevBookings => 
-        prevBookings.map(booking => 
-          booking.hotel._id === hotelId
-            ? {
-                ...booking,
-                userRating: rating,
-                hotel: {
-                  ...booking.hotel,
-                  rating: data.newRating
-                }
-              }
-            : booking
-        )
-      );
+      fetchBookings();
     } catch (err) {
-      console.error('Rating error details:', err);
+      console.error('Rating error:', err);
       setRatingError(prev => ({ ...prev, [hotelId]: err.message }));
     } finally {
       setIsRating(prev => ({ ...prev, [hotelId]: false }));
+    }
+  };
+
+  const handleCancelBooking = async (bookingId) => {
+    setCancellingBooking(prev => ({ ...prev, [bookingId]: true }));
+    setCancellationError(prev => ({ ...prev, [bookingId]: null }));
+
+    try {
+      const response = await fetch('/api/bookings', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          bookingId,
+          status: 'cancelled' 
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to cancel booking');
+      }
+
+      // Refresh bookings to get updated status
+      fetchBookings();
+    } catch (err) {
+      console.error('Cancellation error:', err);
+      setCancellationError(prev => ({ ...prev, [bookingId]: err.message }));
+    } finally {
+      setCancellingBooking(prev => ({ ...prev, [bookingId]: false }));
     }
   };
 
@@ -195,16 +205,13 @@ export default function UserBookings() {
                 className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-300"
               >
                 <div className="flex flex-col md:flex-row">
-                  <div className="md:w-1/3">
-                    <div className="relative h-48 md:h-full w-full">
-                      <Image
-                        src={booking.hotel?.image || '/placeholder.jpg'}
-                        alt={booking.hotel?.name || 'Hotel'}
-                        fill
-                        className="object-cover rounded-lg"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                      />
-                    </div>
+                  <div className="md:w-1/3 relative h-48 md:h-full">
+                    <Image
+                      src={booking.hotel?.image || '/placeholder.jpg'}
+                      alt={booking.hotel?.name || 'Hotel'}
+                      fill
+                      className="object-cover"
+                    />
                   </div>
                   <div className="flex-1 p-6">
                     <div className="flex justify-between items-start">
@@ -257,50 +264,61 @@ export default function UserBookings() {
                       </div>
                     </div>
 
-                    {/* Rating Section */}
+                    {/* Cancel Button - Only show for pending bookings */}
+                    {booking.status === 'pending' && (
+                      <div className="mt-6 pt-6 border-t border-gray-200">
+                        <button
+                          onClick={() => handleCancelBooking(booking._id)}
+                          disabled={cancellingBooking[booking._id]}
+                          className="w-full flex items-center justify-center gap-2 bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {cancellingBooking[booking._id] ? (
+                            'Cancelling...'
+                          ) : (
+                            <>
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                              </svg>
+                              Cancel Booking
+                            </>
+                          )}
+                        </button>
+                        {cancellationError[booking._id] && (
+                          <p className="text-red-500 text-sm mt-2">
+                            {cancellationError[booking._id]}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Rating Section - Only show for completed bookings */}
                     {booking.status === 'completed' && (
-                      <div className="mt-4 border-t pt-4">
-                        {userRatings[booking.hotel._id] ? (
-                          <div className="flex items-center gap-2 text-green-600">
-                            <Star className="w-5 h-5 text-yellow-400 fill-current" />
-                            <p className="text-sm">
-                              You rated this hotel {userRatings[booking.hotel._id]} stars
-                            </p>
-                          </div>
-                        ) : (
-                          <>
-                            <h4 className="text-sm font-medium text-gray-700 mb-2">Rate your stay</h4>
-                            <div className="flex items-center gap-2">
-                              {[1, 2, 3, 4, 5].map((star) => (
-                                <button
-                                  key={star}
-                                  onClick={() => handleRatingSubmit(booking.hotel._id, star)}
-                                  disabled={isRating[booking.hotel._id]}
-                                  className={`p-1 rounded-full hover:bg-gray-100 transition-colors ${
-                                    isRating[booking.hotel._id] ? 'cursor-wait' : 'cursor-pointer'
-                                  }`}
-                                >
-                                  <Star
-                                    className={`w-5 h-5 ${
-                                      star <= booking.hotel.rating
-                                        ? 'text-yellow-400 fill-current'
-                                        : 'text-gray-300'
-                                    }`}
-                                  />
-                                </button>
-                              ))}
-                            </div>
-                            {ratingError[booking.hotel._id] && (
-                              <p className="mt-2 text-sm text-red-600">
-                                {ratingError[booking.hotel._id]}
-                              </p>
-                            )}
-                            {isRating[booking.hotel._id] && (
-                              <p className="mt-2 text-sm text-gray-500">
-                                Submitting rating...
-                              </p>
-                            )}
-                          </>
+                      <div className="mt-6 pt-6 border-t border-gray-200">
+                        <h4 className="text-sm font-medium text-gray-900 mb-3">Rate your stay</h4>
+                        <div className="flex items-center gap-1">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <button
+                              key={star}
+                              onClick={() => handleRatingSubmit(booking.hotel._id, star)}
+                              disabled={isRating[booking.hotel._id]}
+                              className={`focus:outline-none transition-colors ${
+                                star <= (userRatings[booking.hotel._id] || 0)
+                                  ? 'text-yellow-400'
+                                  : 'text-gray-300'
+                              } hover:text-yellow-400`}
+                              aria-label={`Rate ${star} stars`}
+                            >
+                              <Star className="w-6 h-6" />
+                            </button>
+                          ))}
+                        </div>
+                        {ratingError[booking.hotel._id] && (
+                          <p className="text-red-500 text-sm mt-2">
+                            {ratingError[booking.hotel._id]}
+                          </p>
+                        )}
+                        {isRating[booking.hotel._id] && (
+                          <p className="text-gray-500 text-sm mt-2">Submitting rating...</p>
                         )}
                       </div>
                     )}
