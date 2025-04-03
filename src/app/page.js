@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { MapPin, Calendar, SlidersHorizontal, Search } from 'lucide-react';
+import { MapPin, SlidersHorizontal, Search } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import HotelCard from '@/components/HotelCard';
 
@@ -18,34 +18,31 @@ export default function Home() {
   });
 
   useEffect(() => {
-    const fetchHotels = async () => {
-      try {
-        const response = await fetch('/api/hotels');
-        if (!response.ok) {
-          throw new Error('Failed to fetch hotels');
-        }
-        const data = await response.json();
-        setHotels(data);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchHotels();
   }, []);
+
+  const fetchHotels = async () => {
+    try {
+      const response = await fetch('/api/hotels');
+      if (!response.ok) throw new Error('Failed to fetch hotels');
+      const data = await response.json();
+      setHotels(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredHotels = hotels.filter(hotel => {
     const price = parseInt(hotel.price);
     const rating = parseFloat(hotel.rating);
-    
-    if (filters.minPrice && price < parseInt(filters.minPrice)) return false;
-    if (filters.maxPrice && price > parseInt(filters.maxPrice)) return false;
-    if (filters.minRating && rating < parseFloat(filters.minRating)) return false;
-    if (filters.location && !hotel.location.toLowerCase().includes(filters.location.toLowerCase())) return false;
-    
-    return true;
+    return (
+      (!filters.minPrice || price >= parseInt(filters.minPrice)) &&
+      (!filters.maxPrice || price <= parseInt(filters.maxPrice)) &&
+      (!filters.minRating || rating >= parseFloat(filters.minRating)) &&
+      (!filters.location || hotel.location.toLowerCase().includes(filters.location.toLowerCase()))
+    );
   });
 
   return (
@@ -86,16 +83,16 @@ export default function Home() {
       {/* Hotel Grid Section */}
       <div className="container mx-auto px-4 py-16">
         <div className="flex justify-between items-center mb-8">
-          <h2 className="text-4xl font-bold animate-fade-in">
-            Featured Hotels
-          </h2>
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow"
-          >
-            <SlidersHorizontal className="w-5 h-5" />
-            <span>Filters</span>
-          </button>
+          <h2 className="text-4xl font-bold animate-fade-in">Featured Hotels</h2>
+          <div className="flex gap-4">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow"
+            >
+              <SlidersHorizontal className="w-5 h-5" />
+              <span>Filters</span>
+            </button>
+          </div>
         </div>
 
         {/* Filters Panel */}
@@ -159,11 +156,8 @@ export default function Home() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {filteredHotels.map((hotel, index) => (
-              <HotelCard
-                key={hotel._id}
-                hotel={hotel}
-              />
+            {filteredHotels.map((hotel) => (
+              <HotelCard key={hotel._id} hotel={hotel} />
             ))}
           </div>
         )}

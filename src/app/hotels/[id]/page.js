@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
-import { Star, MapPin, DollarSign, Users} from 'lucide-react';
+import { Star, MapPin, DollarSign, Users, Building2 } from 'lucide-react';
 import { useAuth } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -119,23 +119,21 @@ const HotelDetails = () => {
     <div className="container mx-auto px-4 py-8">
 
       {/* Hero Section */}
-      <div className="relative h-[500px] rounded-lg overflow-hidden mb-8">
-        <Image
-          src={hotel.image || '/placeholder.jpg'}
-          alt={hotel.name}
-          fill
-          className="object-cover"
-          priority
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/60 to-black/40 flex items-center justify-center">
-          <div className="text-center text-white">
-            <h1 className="text-5xl font-bold mb-4">{hotel.name}</h1>
-            <div className="flex items-center justify-center gap-2 text-lg">
-              <MapPin className="w-6 h-6" />
-              <span>{hotel.location}</span>
-            </div>
+      <div className="relative h-[400px] w-full">
+        {hotel.image ? (
+          <Image
+            src={hotel.image}
+            alt={hotel.name}
+            fill
+            className="object-cover"
+            sizes="(max-width: 768px) 100vw, 75vw"
+            priority
+          />
+        ) : (
+          <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+            <Building2 className="w-24 h-24 text-gray-400" />
           </div>
-        </div>
+        )}
       </div>
 
       {/* Main Content */}

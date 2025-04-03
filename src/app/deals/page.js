@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { Star, MapPin, DollarSign, Calendar } from 'lucide-react';
+import { Star, MapPin, DollarSign, Calendar, Building2 } from 'lucide-react';
 import Link from 'next/link';
 
 export default function Deals() {
@@ -82,12 +82,19 @@ export default function Deals() {
                 className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-300"
               >
                 <div className="relative h-48">
-                  <Image
-                    src={hotel?.image || '/placeholder.jpg'}
-                    alt={hotel?.name || 'Hotel'}
-                    fill
-                    className="object-cover"
-                  />
+                  {hotel?.image ? (
+                    <Image
+                      src={hotel.image}
+                      alt={hotel.name}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                      <Building2 className="w-12 h-12 text-gray-400" />
+                    </div>
+                  )}
                   <div className="absolute top-2 right-2 bg-red-600 text-white px-2 py-1 rounded-full text-sm font-medium">
                     Special Deal
                   </div>

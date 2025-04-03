@@ -75,13 +75,13 @@ export async function GET(req) {
         name: booking.hotelId.name || 'Unnamed Hotel',
         location: booking.hotelId.location || 'Location not specified',
         price: booking.hotelId.price || 0,
-        image: booking.hotelId.image || '/placeholder.jpg'
+        image: booking.hotelId.image || null
       } : {
         _id: null,
         name: 'Unnamed Hotel',
         location: 'Location not specified',
         price: 0,
-        image: '/placeholder.jpg'
+        image: null
       };
 
       return {

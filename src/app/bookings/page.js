@@ -206,15 +206,20 @@ export default function UserBookings() {
               >
                 <div className="flex flex-col md:flex-row">
                   <div className="md:w-1/3 relative h-48 md:h-full">
-                    <Image
-                      src={booking.hotel?.image || 'https://placehold.co/600x400?text=No+Image'}
-                      alt={booking.hotel?.name || 'Hotel'}
-                      fill
-                      className="object-cover"
-                      onError={(e) => {
-                        e.target.src = 'https://placehold.co/600x400?text=No+Image';
-                      }}
-                    />
+                    {booking.hotel?.image ? (
+                      <Image
+                        src={booking.hotel.image}
+                        alt={booking.hotel.name || 'Hotel'}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        priority
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                        <Building2 className="w-12 h-12 text-gray-400" />
+                      </div>
+                    )}
                   </div>
                   <div className="flex-1 p-6">
                     <div className="flex justify-between items-start">

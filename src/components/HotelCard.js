@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Star, MapPin, Calendar, Users } from 'lucide-react';
+import { Star, MapPin, Calendar, Users, Building2 } from 'lucide-react';
 import Image from 'next/image';
 
 export default function HotelCard({ hotel }) {
@@ -84,13 +84,19 @@ export default function HotelCard({ hotel }) {
     <>
       <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
         <div className="relative h-48">
-          <Image
-            src={hotel.image || '/placeholder.jpg'}
-            alt={hotel.name}
-            fill
-            className="object-cover"
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          />
+          {hotel.image ? (
+            <Image
+              src={hotel.image}
+              alt={hotel.name}
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            />
+          ) : (
+            <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+              <Building2 className="w-12 h-12 text-gray-400" />
+            </div>
+          )}
           <div className="absolute top-2 right-2 bg-white px-2 py-1 rounded-full text-sm font-medium">
             ${hotel.price}/night
           </div>
@@ -140,13 +146,19 @@ export default function HotelCard({ hotel }) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <div className="relative h-64 mb-4">
-                    <Image
-                      src={hotel.image || '/placeholder.jpg'}
-                      alt={hotel.name}
-                      fill
-                      className="object-cover rounded-lg"
-                      sizes="(max-width: 768px) 100vw, 50vw"
-                    />
+                    {hotel.image ? (
+                      <Image
+                        src={hotel.image}
+                        alt={hotel.name}
+                        fill
+                        className="object-cover rounded-lg"
+                        sizes="(max-width: 768px) 100vw, 50vw"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gray-100 flex items-center justify-center rounded-lg">
+                        <Building2 className="w-16 h-16 text-gray-400" />
+                      </div>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center text-gray-600">

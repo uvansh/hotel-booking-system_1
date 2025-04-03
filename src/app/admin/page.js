@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Search, SlidersHorizontal, Calendar, MapPin, Star, Clock, Users, CheckCircle } from 'lucide-react';
+import { Plus, Trash2, Search, SlidersHorizontal, Calendar, MapPin, Pencil, Building2 } from 'lucide-react';
 import { useAuth } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
+import { toast } from "sonner";
 
 export default function AdminDashboard() {
   const { isLoaded, userId, isSignedIn } = useAuth();
@@ -22,20 +23,6 @@ export default function AdminDashboard() {
     maxRating: '',
     location: '',
   });
-  const [formData, setFormData] = useState({
-    name: '',
-    price: '',
-    rating: '',
-    image: '',
-    location: '',
-    description: '',
-    amenities: [],
-    rooms: []
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [bookings, setBookings] = useState([]);
-  const [updatingStatus, setUpdatingStatus] = useState({});
-  const [statusError, setStatusError] = useState({});
 
   useEffect(() => {
     if (isLoaded) {
@@ -49,7 +36,6 @@ export default function AdminDashboard() {
         } else {
           fetchHotels();
           fetchDestinations();
-          fetchBookings();
         }
       }
     }
@@ -112,87 +98,11 @@ export default function AdminDashboard() {
       if (!response.ok) throw new Error('Failed to fetch hotels');
       const data = await response.json();
       setHotels(data);
-    } catch (err) {
-      setError(err.message);
+    } catch (error) {
+      toast.error("Failed to fetch hotels. Please try again.");
     } finally {
       setLoading(false);
     }
-  };
-
-  const fetchBookings = async () => {
-    try {
-      const response = await fetch('/api/bookings');
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch bookings');
-      }
-      setBookings(data);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setError(null);
-
-    try {
-      // Convert amenities string to array
-      const amenitiesArray = formData.amenities
-        .split(',')
-        .map(item => item.trim())
-        .filter(item => item !== '');
-
-      const hotelData = {
-        ...formData,
-        amenities: amenitiesArray,
-        price: Number(formData.price),
-        rating: Number(formData.rating),
-      };
-
-      const response = await fetch('/api/hotels', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(hotelData),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to create hotel');
-      }
-
-      // Reset form and refresh hotels list
-      setFormData({
-        name: '',
-        price: '',
-        rating: '',
-        image: '',
-        location: '',
-        description: '',
-        amenities: [],
-        rooms: []
-      });
-      fetchHotels();
-    } catch (err) {
-      console.error('Error creating hotel:', err);
-      setError(err.message || 'Failed to create hotel');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
   };
 
   const handleDelete = async (id) => {
@@ -203,43 +113,17 @@ export default function AdminDashboard() {
         method: 'DELETE',
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to delete hotel');
-      }
+      if (!response.ok) throw new Error('Failed to delete hotel');
 
-      fetchHotels();
-    } catch (err) {
-      setError(err.message);
+      setHotels(hotels.filter(hotel => hotel._id !== id));
+      toast.success("Hotel deleted successfully");
+    } catch (error) {
+      toast.error("Failed to delete hotel. Please try again.");
     }
   };
 
-  const handleStatusUpdate = async (bookingId, newStatus) => {
-    setUpdatingStatus(prev => ({ ...prev, [bookingId]: true }));
-    setStatusError(prev => ({ ...prev, [bookingId]: null }));
-
-    try {
-      const response = await fetch(`/api/bookings/${bookingId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status: newStatus }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to update booking status');
-      }
-
-      // Refresh bookings to get updated status
-      fetchBookings();
-    } catch (err) {
-      console.error('Status update error:', err);
-      setStatusError(prev => ({ ...prev, [bookingId]: err.message }));
-    } finally {
-      setUpdatingStatus(prev => ({ ...prev, [bookingId]: false }));
-    }
+  const handleEdit = (id) => {
+    router.push(`/admin/hotels/${id}/edit`);
   };
 
   if (loading) {
@@ -251,331 +135,172 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-        <div className="flex gap-4">
-          <button
-            onClick={() => router.push('/admin/bookings')}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors"
-          >
-            <Calendar className="w-5 h-5" />
-            <span>Bookings</span>
-          </button>
-          <button
-            onClick={() => router.push('/admin/destinations')}
-            className="flex items-center gap-2 px-4 py-2 bg-green-100 text-green-700 rounded-md hover:bg-green-200 transition-colors"
-          >
-            <MapPin className="w-5 h-5" />
-            <span>Destinations</span>
-          </button>
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
-          >
-            <SlidersHorizontal className="w-5 h-5" />
-            <span>Filters</span>
-          </button>
-        </div>
-      </div>
-
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md mb-6">
-          {error}
-        </div>
-      )}
-
-      {/* Filters */}
-      {showFilters && (
-        <div className="bg-white p-4 rounded-lg shadow-md mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Search
-              </label>
-              <input
-                type="text"
-                value={filters.search}
-                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-                className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Search hotels..."
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Price Range
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="number"
-                  value={filters.minPrice}
-                  onChange={(e) => setFilters({ ...filters, minPrice: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Min"
-                />
-                <input
-                  type="number"
-                  value={filters.maxPrice}
-                  onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Max"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Rating Range
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="number"
-                  min="0"
-                  max="5"
-                  step="0.1"
-                  value={filters.minRating}
-                  onChange={(e) => setFilters({ ...filters, minRating: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Min"
-                />
-                <input
-                  type="number"
-                  min="0"
-                  max="5"
-                  step="0.1"
-                  value={filters.maxRating}
-                  onChange={(e) => setFilters({ ...filters, maxRating: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Max"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Location
-              </label>
-              <input
-                type="text"
-                value={filters.location}
-                onChange={(e) => setFilters({ ...filters, location: e.target.value })}
-                className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Enter location..."
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Add Hotel Form */}
-      <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-        <h2 className="text-2xl font-semibold mb-4">Add New Hotel</h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-              <input
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                required
-                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Price</label>
-              <input
-                type="number"
-                name="price"
-                value={formData.price}
-                onChange={handleInputChange}
-                required
-                min="0"
-                step="0.01"
-                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Rating</label>
-              <input
-                type="number"
-                name="rating"
-                value={formData.rating}
-                onChange={handleInputChange}
-                required
-                min="0"
-                max="5"
-                step="0.1"
-                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Image URL</label>
-              <input
-                type="url"
-                name="image"
-                value={formData.image}
-                onChange={handleInputChange}
-                required
-                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-              <input
-                type="text"
-                name="location"
-                value={formData.location}
-                onChange={handleInputChange}
-                required
-                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleInputChange}
-              required
-              rows="3"
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Amenities (comma-separated)</label>
-            <input
-              type="text"
-              name="amenities"
-              value={formData.amenities}
-              onChange={handleInputChange}
-              placeholder="e.g., WiFi, Pool, Parking"
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isSubmitting ? 'Adding...' : 'Add Hotel'}
-          </button>
-        </form>
-      </div>
-
-      {/* Hotels List */}
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-gray-50 border-b">
-                <th className="text-left py-3 px-4">Name</th>
-                <th className="text-left py-3 px-4">Location</th>
-                <th className="text-left py-3 px-4">Price</th>
-                <th className="text-left py-3 px-4">Rating</th>
-                <th className="text-left py-3 px-4">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredHotels.map((hotel) => (
-                <tr key={hotel._id} className="border-b hover:bg-gray-50">
-                  <td className="py-3 px-4">{hotel.name}</td>
-                  <td className="py-3 px-4">{hotel.location}</td>
-                  <td className="py-3 px-4">${hotel.price}</td>
-                  <td className="py-3 px-4">{hotel.rating} / 5</td>
-                  <td className="py-3 px-4">
-                    <button
-                      onClick={() => handleDelete(hotel._id)}
-                      className="text-red-600 hover:text-red-800"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Bookings List */}
-      <div className="mt-8">
-        <h2 className="text-2xl font-semibold mb-4">Bookings</h2>
-        {bookings.length === 0 ? (
-          <div className="text-center py-12">
-            <h3 className="text-lg font-medium text-gray-900">No bookings found</h3>
-            <p className="mt-2 text-gray-500">There are no bookings to manage.</p>
-          </div>
-        ) : (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {bookings.map((booking) => (
-              <div
-                key={booking._id}
-                className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300"
+    <div className="min-h-screen bg-gray-50">
+      {/* Header Section */}
+      <div className="bg-white shadow-sm">
+        <div className="container mx-auto px-4 py-6">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={() => router.push('/admin/hotels/add')}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-sm"
               >
-                <div className="relative h-48">
-                  <img
-                    src={booking.hotel.image}
-                    alt={booking.hotel.name}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute top-2 right-2 bg-white px-2 py-1 rounded-full text-sm font-medium">
-                    ${booking.hotel.price}/night
-                  </div>
-                </div>
-                <div className="p-4">
-                  <h3 className="text-lg font-semibold mb-2">{booking.hotel.name}</h3>
-                  <div className="space-y-2 text-gray-600">
-                    <div className="flex items-center">
-                      <MapPin className="w-4 h-4 mr-2" />
-                      <span>{booking.hotel.location}</span>
-                    </div>
-                    <div className="flex items-center">
-                      <Calendar className="w-4 h-4 mr-2" />
-                      <span>
-                        {new Date(booking.checkIn).toLocaleDateString()} -{' '}
-                        {new Date(booking.checkOut).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <div className="flex items-center">
-                      <Users className="w-4 h-4 mr-2" />
-                      <span>{booking.guests} guests</span>
-                    </div>
-                    <div className="flex items-center">
-                      <Clock className="w-4 h-4 mr-2" />
-                      <span className="capitalize">{booking.status}</span>
-                    </div>
-                  </div>
+                <Plus className="w-5 h-5" />
+                <span>Add Hotel</span>
+              </button>
+              <button
+                onClick={() => router.push('/admin/bookings')}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors shadow-sm"
+              >
+                <Calendar className="w-5 h-5" />
+                <span>Bookings</span>
+              </button>
+              <button
+                onClick={() => router.push('/admin/destinations')}
+                className="flex items-center gap-2 px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors shadow-sm"
+              >
+                <MapPin className="w-5 h-5" />
+                <span>Destinations</span>
+              </button>
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors shadow-sm"
+              >
+                <SlidersHorizontal className="w-5 h-5" />
+                <span>Filters</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
 
-                  {/* Status Update Section */}
-                  {booking.status !== 'completed' && (
-                    <div className="mt-4 pt-4 border-t border-gray-200">
-                      <button
-                        onClick={() => handleStatusUpdate(booking._id, 'completed')}
-                        disabled={updatingStatus[booking._id]}
-                        className="w-full flex items-center justify-center gap-2 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {updatingStatus[booking._id] ? (
-                          'Updating...'
-                        ) : (
-                          <>
-                            <CheckCircle className="w-4 h-4" />
-                            Mark as Completed
-                          </>
-                        )}
-                      </button>
-                      {statusError[booking._id] && (
-                        <p className="text-red-500 text-sm mt-2">
-                          {statusError[booking._id]}
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
+      {/* Main Content */}
+      <div className="container mx-auto px-4 py-8">
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-6">
+            {error}
           </div>
         )}
+
+        {/* Filters Panel */}
+        {showFilters && (
+          <div className="bg-white p-6 rounded-lg shadow-md mb-8">
+            <h2 className="text-lg font-semibold mb-4 text-gray-900">Filter Hotels</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Search</label>
+                <input
+                  type="text"
+                  value={filters.search}
+                  onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Search hotels..."
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Price Range</label>
+                <div className="flex gap-3">
+                  <input
+                    type="number"
+                    value={filters.minPrice}
+                    onChange={(e) => setFilters({ ...filters, minPrice: e.target.value })}
+                    className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Min"
+                  />
+                  <input
+                    type="number"
+                    value={filters.maxPrice}
+                    onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })}
+                    className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Max"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Rating Range</label>
+                <div className="flex gap-3">
+                  <input
+                    type="number"
+                    min="0"
+                    max="5"
+                    step="0.1"
+                    value={filters.minRating}
+                    onChange={(e) => setFilters({ ...filters, minRating: e.target.value })}
+                    className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Min"
+                  />
+                  <input
+                    type="number"
+                    min="0"
+                    max="5"
+                    step="0.1"
+                    value={filters.maxRating}
+                    onChange={(e) => setFilters({ ...filters, maxRating: e.target.value })}
+                    className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Max"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+                <input
+                  type="text"
+                  value={filters.location}
+                  onChange={(e) => setFilters({ ...filters, location: e.target.value })}
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter location..."
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Hotels Section */}
+        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+          <div className="p-6 border-b border-gray-200">
+            <h2 className="text-xl font-semibold text-gray-900">Hotels Management</h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gray-50 border-b">
+                  <th className="text-left py-4 px-6 text-sm font-medium text-gray-500">Name</th>
+                  <th className="text-left py-4 px-6 text-sm font-medium text-gray-500">Location</th>
+                  <th className="text-left py-4 px-6 text-sm font-medium text-gray-500">Price</th>
+                  <th className="text-left py-4 px-6 text-sm font-medium text-gray-500">Rating</th>
+                  <th className="text-left py-4 px-6 text-sm font-medium text-gray-500">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {filteredHotels.map((hotel) => (
+                  <tr key={hotel._id} className="hover:bg-gray-50">
+                    <td className="py-4 px-6 text-sm text-gray-900">{hotel.name}</td>
+                    <td className="py-4 px-6 text-sm text-gray-500">{hotel.location}</td>
+                    <td className="py-4 px-6 text-sm text-gray-900">${hotel.price}</td>
+                    <td className="py-4 px-6 text-sm text-gray-900">{hotel.rating} / 5</td>
+                    <td className="py-4 px-6">
+                      <div className="flex items-center gap-4">
+                        <button
+                          onClick={() => handleEdit(hotel._id)}
+                          className="text-blue-600 hover:text-blue-800 transition-colors"
+                        >
+                          <Pencil className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(hotel._id)}
+                          className="text-red-600 hover:text-red-800 transition-colors"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
   );

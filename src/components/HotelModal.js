@@ -1,17 +1,26 @@
+import { useState } from 'react';
 import Image from 'next/image';
-import { Star, MapPin, X } from 'lucide-react';
+import { Star, MapPin, X, Calendar, Users, Building2 } from 'lucide-react';
 
 export default function HotelModal({ hotel, onClose }) {
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="relative h-[400px] w-full">
-          <Image
-            src={hotel.image}
-            alt={hotel.name}
-            fill
-            className="object-cover rounded-t-2xl"
-          />
+        <div className="relative h-96">
+          {hotel.image ? (
+            <Image
+              src={hotel.image}
+              alt={hotel.name}
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 75vw"
+              priority
+            />
+          ) : (
+            <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+              <Building2 className="w-24 h-24 text-gray-400" />
+            </div>
+          )}
           <button
             onClick={onClose}
             className="absolute top-4 right-4 bg-white/90 p-2 rounded-full hover:bg-white transition-colors"

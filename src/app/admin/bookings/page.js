@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
-import { Calendar, Clock, MapPin, Users, CheckCircle } from 'lucide-react';
+import { Calendar, Clock, MapPin, Users, CheckCircle, Building2 } from 'lucide-react';
 
 export default function ManageBookings() {
   const { isLoaded, userId, isSignedIn } = useAuth();
@@ -14,6 +14,8 @@ export default function ManageBookings() {
   const [updatingStatus, setUpdatingStatus] = useState({});
   const [statusError, setStatusError] = useState({});
   const [filter, setFilter] = useState('all'); // all, pending, completed, cancelled
+  const [cancellingBooking, setCancellingBooking] = useState({});
+  const [cancellationError, setCancellationError] = useState({});
 
   useEffect(() => {
     if (isLoaded) {
@@ -95,6 +97,38 @@ export default function ManageBookings() {
     }
   };
 
+  const handleCancelBooking = async (bookingId) => {
+    setCancellingBooking(prev => ({ ...prev, [bookingId]: true }));
+    setCancellationError(prev => ({ ...prev, [bookingId]: null }));
+
+    try {
+      const response = await fetch('/api/bookings', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          bookingId,
+          status: 'cancelled' 
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to cancel booking');
+      }
+
+      // Refresh bookings to get updated status
+      fetchBookings();
+    } catch (err) {
+      console.error('Cancellation error:', err);
+      setCancellationError(prev => ({ ...prev, [bookingId]: err.message }));
+    } finally {
+      setCancellingBooking(prev => ({ ...prev, [bookingId]: false }));
+    }
+  };
+
   const filteredBookings = bookings.filter(booking => {
     if (filter === 'all') return true;
     return booking.status === filter;
@@ -164,14 +198,17 @@ export default function ManageBookings() {
               className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300"
             >
               <div className="relative h-48">
-                <img
-                  src={booking.hotel?.image || 'https://placehold.co/600x400?text=No+Image'}
-                  alt={booking.hotel?.name || 'Hotel'}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    e.target.src = 'https://placehold.co/600x400?text=No+Image';
-                  }}
-                />
+                {booking.hotel?.image ? (
+                  <img
+                    src={booking.hotel.image}
+                    alt={booking.hotel.name || 'Hotel'}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                    <Building2 className="w-12 h-12 text-gray-400" />
+                  </div>
+                )}
                 <div className="absolute top-2 right-2 bg-white px-2 py-1 rounded-full text-sm font-medium">
                   ${booking.hotel?.price || 0}/night
                 </div>
@@ -210,7 +247,7 @@ export default function ManageBookings() {
                 </div>
 
                 {booking.status !== 'completed' && (
-                  <div className="mt-4 pt-4 border-t border-gray-200">
+                  <div className="mt-4 pt-4 border-t border-gray-200 space-y-3">
                     <button
                       onClick={() => handleStatusUpdate(booking._id, 'completed')}
                       disabled={updatingStatus[booking._id]}
@@ -225,9 +262,32 @@ export default function ManageBookings() {
                         </>
                       )}
                     </button>
+                    {booking.status === 'pending' && (
+                      <button
+                        onClick={() => handleCancelBooking(booking._id)}
+                        disabled={cancellingBooking[booking._id]}
+                        className="w-full flex items-center justify-center gap-2 bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {cancellingBooking[booking._id] ? (
+                          'Cancelling...'
+                        ) : (
+                          <>
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                            Cancel Booking
+                          </>
+                        )}
+                      </button>
+                    )}
                     {statusError[booking._id] && (
-                      <p className="text-red-500 text-sm mt-2">
+                      <p className="text-red-500 text-sm">
                         {statusError[booking._id]}
+                      </p>
+                    )}
+                    {cancellationError[booking._id] && (
+                      <p className="text-red-500 text-sm">
+                        {cancellationError[booking._id]}
                       </p>
                     )}
                   </div>

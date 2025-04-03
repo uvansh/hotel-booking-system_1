@@ -3,6 +3,7 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 import { ClerkProvider } from '@clerk/nextjs';
 import { neobrutalism } from '@clerk/themes';
+import { Toaster } from "sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,6 +32,7 @@ export default function RootLayout({ children }) {
           <Navbar />
           <main className="pt-20">
             {children}
+            <Toaster/>
           </main>
         </body>
       </html>
