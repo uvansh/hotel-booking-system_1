@@ -205,14 +205,14 @@ export default function UserBookings() {
                 className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-300"
               >
                 <div className="flex flex-col md:flex-row">
-                  <div className="md:w-1/3 relative h-48 md:h-full">
+                  <div className="md:w-1/3 relative h-48 md:h-auto">
                     {booking.hotel?.image ? (
                       <Image
                         src={booking.hotel.image}
                         alt={booking.hotel.name || 'Hotel'}
                         fill
                         className="object-cover"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 33vw, 25vw"
                         priority
                       />
                     ) : (

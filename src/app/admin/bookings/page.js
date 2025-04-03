@@ -73,7 +73,7 @@ export default function ManageBookings() {
     setStatusError(prev => ({ ...prev, [bookingId]: null }));
 
     try {
-      const response = await fetch(`/api/bookings/${bookingId}`, {
+      const response = await fetch(`/api/admin/bookings/${bookingId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -246,7 +246,7 @@ export default function ManageBookings() {
                   </div>
                 </div>
 
-                {booking.status !== 'completed' && (
+                {booking.status === 'pending' && (
                   <div className="mt-4 pt-4 border-t border-gray-200 space-y-3">
                     <button
                       onClick={() => handleStatusUpdate(booking._id, 'completed')}
@@ -262,24 +262,23 @@ export default function ManageBookings() {
                         </>
                       )}
                     </button>
-                    {booking.status === 'pending' && (
-                      <button
-                        onClick={() => handleCancelBooking(booking._id)}
-                        disabled={cancellingBooking[booking._id]}
-                        className="w-full flex items-center justify-center gap-2 bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {cancellingBooking[booking._id] ? (
-                          'Cancelling...'
-                        ) : (
-                          <>
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                            </svg>
-                            Cancel Booking
-                          </>
-                        )}
-                      </button>
-                    )}
+                    
+                    <button
+                      onClick={() => handleCancelBooking(booking._id)}
+                      disabled={cancellingBooking[booking._id]}
+                      className="w-full flex items-center justify-center gap-2 bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {cancellingBooking[booking._id] ? (
+                        'Cancelling...'
+                      ) : (
+                        <>
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                          </svg>
+                          Cancel Booking
+                        </>
+                      )}
+                    </button>
                     {statusError[booking._id] && (
                       <p className="text-red-500 text-sm">
                         {statusError[booking._id]}

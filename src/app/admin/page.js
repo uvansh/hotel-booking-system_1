@@ -262,43 +262,47 @@ export default function AdminDashboard() {
             <h2 className="text-xl font-semibold text-gray-900">Hotels Management</h2>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-gray-50 border-b">
-                  <th className="text-left py-4 px-6 text-sm font-medium text-gray-500">Name</th>
-                  <th className="text-left py-4 px-6 text-sm font-medium text-gray-500">Location</th>
-                  <th className="text-left py-4 px-6 text-sm font-medium text-gray-500">Price</th>
-                  <th className="text-left py-4 px-6 text-sm font-medium text-gray-500">Rating</th>
-                  <th className="text-left py-4 px-6 text-sm font-medium text-gray-500">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {filteredHotels.map((hotel) => (
-                  <tr key={hotel._id} className="hover:bg-gray-50">
-                    <td className="py-4 px-6 text-sm text-gray-900">{hotel.name}</td>
-                    <td className="py-4 px-6 text-sm text-gray-500">{hotel.location}</td>
-                    <td className="py-4 px-6 text-sm text-gray-900">${hotel.price}</td>
-                    <td className="py-4 px-6 text-sm text-gray-900">{hotel.rating} / 5</td>
-                    <td className="py-4 px-6">
-                      <div className="flex items-center gap-4">
-                        <button
-                          onClick={() => handleEdit(hotel._id)}
-                          className="text-blue-600 hover:text-blue-800 transition-colors"
-                        >
-                          <Pencil className="w-5 h-5" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(hotel._id)}
-                          className="text-red-600 hover:text-red-800 transition-colors"
-                        >
-                          <Trash2 className="w-5 h-5" />
-                        </button>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredHotels.map((hotel) => (
+                <div key={hotel._id} className="bg-white rounded-lg shadow-md overflow-hidden">
+                  <div className="relative aspect-video">
+                    {hotel.image ? (
+                      <img
+                        src={hotel.image}
+                        alt={hotel.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                        <Building2 className="w-12 h-12 text-gray-400" />
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    )}
+                    <div className="absolute top-2 right-2 flex gap-2">
+                      <button
+                        onClick={() => handleEdit(hotel._id)}
+                        className="p-2 bg-white/90 rounded-full hover:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <Pencil className="w-5 h-5 text-blue-600" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(hotel._id)}
+                        className="p-2 bg-white/90 rounded-full hover:bg-white focus:outline-none focus:ring-2 focus:ring-red-500"
+                      >
+                        <Trash2 className="w-5 h-5 text-red-600" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="p-4">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">{hotel.name}</h3>
+                    <p className="text-gray-600 mb-2">{hotel.location}</p>
+                    <div className="flex justify-between items-center">
+                      <span className="text-blue-600 font-semibold">${hotel.price}/night</span>
+                      <span className="text-yellow-500">★ {hotel.rating}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
