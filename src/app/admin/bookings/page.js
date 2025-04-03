@@ -36,8 +36,11 @@ export default function ManageBookings() {
       setLoading(true);
       setError(null);
       
-      const response = await fetch('/api/bookings');
+      const response = await fetch('/api/admin/bookings');
       const data = await response.json();
+      
+      console.log('API Response:', response);
+      console.log('Bookings Data:', data);
       
       if (!response.ok) {
         throw new Error(data.error || 'Failed to fetch bookings');
@@ -47,7 +50,14 @@ export default function ManageBookings() {
         throw new Error('Invalid bookings data received');
       }
 
-      setBookings(data);
+      // Transform the data to match the expected structure
+      const transformedBookings = data.map(booking => ({
+        ...booking,
+        guests: booking.numberOfGuests, // Map numberOfGuests to guests
+        hotel: booking.hotelId // Map hotelId to hotel
+      }));
+
+      setBookings(transformedBookings);
     } catch (err) {
       console.error('Error fetching bookings:', err);
       setError(err.message);
@@ -148,7 +158,7 @@ export default function ManageBookings() {
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {filteredBookings.map((booking) => (
+          {bookings.map((booking) => (
             <div
               key={booking._id}
               className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300"
@@ -158,6 +168,9 @@ export default function ManageBookings() {
                   src={booking.hotel?.image || '/placeholder.jpg'}
                   alt={booking.hotel?.name || 'Hotel'}
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.target.src = '/placeholder.jpg';
+                  }}
                 />
                 <div className="absolute top-2 right-2 bg-white px-2 py-1 rounded-full text-sm font-medium">
                   ${booking.hotel?.price || 0}/night
@@ -171,7 +184,9 @@ export default function ManageBookings() {
                 </div>
               </div>
               <div className="p-4">
-                <h3 className="text-lg font-semibold mb-2">{booking.hotel?.name || 'Unnamed Hotel'}</h3>
+                <h3 className="text-lg font-semibold mb-2">
+                  {booking.hotel?.name || 'Unnamed Hotel'}
+                </h3>
                 <div className="space-y-2 text-gray-600">
                   <div className="flex items-center">
                     <MapPin className="w-4 h-4 mr-2" />
@@ -194,7 +209,6 @@ export default function ManageBookings() {
                   </div>
                 </div>
 
-                {/* Status Update Section */}
                 {booking.status !== 'completed' && (
                   <div className="mt-4 pt-4 border-t border-gray-200">
                     <button

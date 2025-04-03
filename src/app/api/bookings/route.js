@@ -60,31 +60,46 @@ export async function GET(req) {
 
     // Fetch all bookings for the user and populate hotel details
     const bookings = await Booking.find({ userId })
-      .populate('hotelId', 'name location price image')
+      .populate({
+        path: 'hotelId',
+        select: 'name location price image',
+        model: 'Hotel'
+      })
       .sort({ createdAt: -1 });
 
     // Transform the data to match the frontend expectations
-    const transformedBookings = bookings.map(booking => ({
-      _id: booking._id,
-      hotel: {
+    const transformedBookings = bookings.map(booking => {
+      // Ensure hotelId exists and has the required properties
+      const hotelData = booking.hotelId ? {
         _id: booking.hotelId._id,
-        name: booking.hotelId.name,
-        location: booking.hotelId.location,
-        price: booking.hotelId.price,
-        image: booking.hotelId.image
-      },
-      checkIn: booking.checkIn,
-      checkOut: booking.checkOut,
-      guests: booking.guests,
-      status: booking.status,
-      createdAt: booking.createdAt
-    }));
+        name: booking.hotelId.name || 'Unnamed Hotel',
+        location: booking.hotelId.location || 'Location not specified',
+        price: booking.hotelId.price || 0,
+        image: booking.hotelId.image || '/placeholder.jpg'
+      } : {
+        _id: null,
+        name: 'Unnamed Hotel',
+        location: 'Location not specified',
+        price: 0,
+        image: '/placeholder.jpg'
+      };
+
+      return {
+        _id: booking._id,
+        hotel: hotelData,
+        checkIn: booking.checkIn,
+        checkOut: booking.checkOut,
+        guests: booking.numberOfGuests, // Use numberOfGuests from the model
+        status: booking.status,
+        createdAt: booking.createdAt
+      };
+    });
 
     return NextResponse.json(transformedBookings);
   } catch (error) {
     console.error('Error fetching bookings:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch bookings' },
+      { error: error.message || 'Failed to fetch bookings' },
       { status: 500 }
     );
   }
