@@ -207,10 +207,13 @@ export default function UserBookings() {
                 <div className="flex flex-col md:flex-row">
                   <div className="md:w-1/3 relative h-48 md:h-full">
                     <Image
-                      src={booking.hotel?.image || '/placeholder.jpg'}
+                      src={booking.hotel?.image || 'https://placehold.co/600x400?text=No+Image'}
                       alt={booking.hotel?.name || 'Hotel'}
                       fill
                       className="object-cover"
+                      onError={(e) => {
+                        e.target.src = 'https://placehold.co/600x400?text=No+Image';
+                      }}
                     />
                   </div>
                   <div className="flex-1 p-6">

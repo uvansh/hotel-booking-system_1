@@ -165,11 +165,11 @@ export default function ManageBookings() {
             >
               <div className="relative h-48">
                 <img
-                  src={booking.hotel?.image || '/placeholder.jpg'}
+                  src={booking.hotel?.image || 'https://placehold.co/600x400?text=No+Image'}
                   alt={booking.hotel?.name || 'Hotel'}
                   className="w-full h-full object-cover"
                   onError={(e) => {
-                    e.target.src = '/placeholder.jpg';
+                    e.target.src = 'https://placehold.co/600x400?text=No+Image';
                   }}
                 />
                 <div className="absolute top-2 right-2 bg-white px-2 py-1 rounded-full text-sm font-medium">
