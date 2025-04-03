@@ -30,8 +30,8 @@ export default function Navbar() {
   const Logo = () => (
     <Link href="/" className="flex items-center">
       <div className='flex items-center gap-1'>
-        <Hotel className="w-6 h-6" color='blue' />
-        <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent italic">
+       {/* <Hotel className="w-10 h-10 p-1 m-2 bg-blue-600 rounded-lg" color='white' /> */}
+        <span className="text-3xl mx-2 font-extrabold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent italic">
           Nestio.
         </span>
       </div>

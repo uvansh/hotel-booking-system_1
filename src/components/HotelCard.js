@@ -223,7 +223,6 @@ export default function HotelCard({ hotel }) {
                         />
                       </div>
                     </div>
-
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Number of Guests
@@ -287,4 +286,4 @@ export default function HotelCard({ hotel }) {
       )}
     </>
   );
-} 
+}
