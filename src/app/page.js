@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { MapPin, Calendar, SlidersHorizontal } from 'lucide-react';
+import { MapPin, Calendar, SlidersHorizontal, Search } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import HotelCard from '@/components/HotelCard';
 
@@ -72,15 +72,12 @@ export default function Home() {
               <MapPin className="w-5 h-5" />
               <input 
                 type="text" 
-                placeholder="Where to go?" 
+                placeholder="Where you want to go?" 
                 className="bg-transparent outline-none text-white placeholder-white/70"
                 value={filters.location}
                 onChange={(e) => setFilters(prev => ({ ...prev, location: e.target.value }))}
               />
-            </div>
-            <div className="flex items-center gap-2">
-              <Calendar className="w-5 h-5" />
-              <input type="date" className="bg-transparent outline-none text-white" />
+              <Search className="w-5 h-5" />
             </div>
           </div>
         </div>
@@ -183,25 +180,25 @@ export default function Home() {
             <div>
               <h4 className="text-lg font-semibold mb-4">Quick Links</h4>
               <ul className="space-y-2">
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">About Us</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Contact</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">FAQs</a></li>
+                <li><a href="/about" className="text-gray-400 hover:text-white transition-colors">About Us</a></li>
+                <li><a href="/contact" className="text-gray-400 hover:text-white transition-colors">Contact</a></li>
+                <li><a href="/comming-soon" className="text-gray-400 hover:text-white transition-colors">FAQs</a></li>
               </ul>
             </div>
             <div>
               <h4 className="text-lg font-semibold mb-4">Support</h4>
               <ul className="space-y-2">
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Help Center</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Terms of Service</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Privacy Policy</a></li>
+                <li><a href="/comming-soon" className="text-gray-400 hover:text-white transition-colors">Help Center</a></li>
+                <li><a href="/comming-soon" className="text-gray-400 hover:text-white transition-colors">Terms of Service</a></li>
+                <li><a href="/comming-soon" className="text-gray-400 hover:text-white transition-colors">Privacy Policy</a></li>
               </ul>
             </div>
             <div>
               <h4 className="text-lg font-semibold mb-4">Connect With Us</h4>
               <ul className="space-y-2">
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Facebook</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Twitter</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Instagram</a></li>
+                <li><a href="https://www.facebook.com/" className="text-gray-400 hover:text-white transition-colors">Facebook</a></li>
+                <li><a href="https://x.com" className="text-gray-400 hover:text-white transition-colors">X Twitter</a></li>
+                <li><a href="https://www.instagram.com/" className="text-gray-400 hover:text-white transition-colors">Instagram</a></li>
               </ul>
             </div>
           </div>
