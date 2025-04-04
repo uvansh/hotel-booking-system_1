@@ -192,7 +192,7 @@ export default function ManageBookings() {
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {bookings.map((booking) => (
+          {filteredBookings.map((booking) => (
             <div
               key={booking._id}
               className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300"
@@ -210,7 +210,14 @@ export default function ManageBookings() {
                   </div>
                 )}
                 <div className="absolute top-2 right-2 bg-white px-2 py-1 rounded-full text-sm font-medium">
-                  ${booking.hotel?.price || 0}/night
+                  {booking.hotel?.discountPercentage > 0 ? (
+                    <>
+                      <span className="line-through text-gray-400 mr-1">${booking.hotel?.price || 0}</span>
+                      <span className="text-green-600">${Math.round(booking.hotel?.price * (1 - (booking.hotel?.discountPercentage || 0) / 100)) || 0}</span>
+                    </>
+                  ) : (
+                    `$${booking.hotel?.price || 0}`
+                  )}/night
                 </div>
                 <div className={`absolute top-2 left-2 px-2 py-1 rounded-full text-sm font-medium ${
                   booking.status === 'completed' ? 'bg-green-100 text-green-800' :

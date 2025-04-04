@@ -295,9 +295,71 @@ export default function AdminDashboard() {
                   <div className="p-4">
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">{hotel.name}</h3>
                     <p className="text-gray-600 mb-2">{hotel.location}</p>
-                    <div className="flex justify-between items-center">
+                    <div className="flex justify-between items-center mb-3">
                       <span className="text-blue-600 font-semibold">${hotel.price}/night</span>
                       <span className="text-yellow-500">★ {hotel.rating}</span>
+                    </div>
+                    <div className="flex items-center justify-between border-t pt-3">
+                      <div className="flex items-center gap-2">
+                        <label className="text-sm text-gray-600">Discount:</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={hotel.discountPercentage || 0}
+                          onChange={(e) => {
+                            const newDiscount = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+                            setHotels(hotels.map(h => 
+                              h._id === hotel._id 
+                                ? { ...h, discountPercentage: newDiscount }
+                                : h
+                            ));
+                          }}
+                          className="w-16 px-2 py-1 border rounded-md text-sm"
+                        />
+                        <span className="text-sm text-gray-600">%</span>
+                        <button
+                          onClick={async () => {
+                            try {
+                              const response = await fetch(`/api/hotels/${hotel._id}`, {
+                                method: 'PATCH',
+                                headers: {
+                                  'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                  discountPercentage: hotel.discountPercentage || 0
+                                }),
+                              });
+                              
+                              if (!response.ok) {
+                                const errorData = await response.json();
+                                throw new Error(errorData.error || 'Failed to update discount');
+                              }
+                              
+                              const data = await response.json();
+                              // Update the local state with the updated hotel data
+                              setHotels(hotels.map(h => 
+                                h._id === hotel._id 
+                                  ? { ...h, discountPercentage: data.hotel.discountPercentage }
+                                  : h
+                              ));
+                              
+                              toast.success("Discount updated successfully");
+                            } catch (error) {
+                              console.error('Error updating discount:', error);
+                              toast.error(error.message || "Failed to update discount");
+                            }
+                          }}
+                          className="px-2 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
+                        >
+                          Save
+                        </button>
+                      </div>
+                      {hotel.discountPercentage > 0 && (
+                        <span className="text-sm text-green-600">
+                          ${Math.round(hotel.price * (1 - hotel.discountPercentage / 100))} after discount
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>

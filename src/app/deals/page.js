@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { Star, MapPin, DollarSign, Calendar, Building2 } from 'lucide-react';
+import { Star, MapPin, DollarSign, Calendar, Building2, Percent } from 'lucide-react';
 import Link from 'next/link';
 
 export default function Deals() {
@@ -24,8 +24,21 @@ export default function Deals() {
         throw new Error(data.error || 'Failed to fetch deals');
       }
 
-      // Filter hotels with discounts (you can modify this logic based on your needs)
-      const deals = data.filter(hotel => hotel.price < 200); // Example: hotels under $200
+      // Process hotels with their stored discount percentages
+      const deals = data
+        .map(hotel => {
+          const discountedPrice = Math.round(hotel.price * (1 - (hotel.discountPercentage || 0) / 100));
+          
+          return {
+            ...hotel,
+            originalPrice: hotel.price,
+            discountedPrice,
+            discount: hotel.discountPercentage || 0
+          };
+        })
+        .filter(hotel => hotel.discount > 0) // Only show hotels with discounts
+        .sort((a, b) => b.discount - a.discount); // Sort by discount percentage
+
       setHotels(deals);
     } catch (err) {
       console.error('Error fetching deals:', err);
@@ -95,11 +108,12 @@ export default function Deals() {
                       <Building2 className="w-12 h-12 text-gray-400" />
                     </div>
                   )}
-                  <div className="absolute top-2 right-2 bg-red-600 text-white px-2 py-1 rounded-full text-sm font-medium">
-                    Special Deal
+                  <div className="absolute top-2 right-2 bg-red-600 text-white px-2 py-1 rounded-full text-sm font-medium flex items-center gap-1">
+                    
+                    {hotel.discount}% OFF
                   </div>
                 </div>
-                <div className="p-6">
+                <div className="p-4">
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">{hotel.name}</h3>
                   <div className="flex items-center text-gray-600 mb-4">
                     <MapPin className="w-4 h-4 mr-1" />
@@ -110,10 +124,14 @@ export default function Deals() {
                       <Star className="w-5 h-5 text-yellow-400 mr-1" />
                       <span className="text-gray-600">{hotel.rating || 'No rating'}</span>
                     </div>
-                    <div className="flex items-center">
-                      <DollarSign className="w-5 h-5 text-green-600 mr-1" />
-                      <span className="text-lg font-semibold text-gray-900">${hotel.price}</span>
-                      <span className="text-sm text-gray-500 ml-1">/night</span>
+                    <div className="flex flex-col items-end">
+                      <div className="flex items-center">
+                        <span className="text-sm text-gray-400 line-through">${hotel.originalPrice}</span>
+                      </div>
+                      <div className="flex items-center bg-green-50 px-3 py-1 rounded-lg">
+                        <span className="text-xl font-bold text-green-700">${hotel.discountedPrice}</span>
+                        <span className="text-sm text-green-600 ml-1">/night</span>
+                      </div>
                     </div>
                   </div>
                   <Link

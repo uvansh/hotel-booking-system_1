@@ -35,7 +35,11 @@ export async function GET(request) {
     
     // Get all bookings with hotel details
     const bookings = await Booking.find()
-      .populate('hotelId')
+      .populate({
+        path: 'hotelId',
+        select: 'name location price image discountPercentage',
+        model: 'Hotel'
+      })
       .sort({ createdAt: -1 });
 
     console.log('Successfully fetched bookings:', bookings.length);

@@ -10,6 +10,12 @@ const HotelSchema = new mongoose.Schema({
     required: [true, 'Please provide a price'],
     min: [0, 'Price cannot be negative'],
   },
+  discountPercentage: {
+    type: Number,
+    default: 0,
+    min: [0, 'Discount cannot be negative'],
+    max: [100, 'Discount cannot be more than 100%'],
+  },
   rating: {
     type: Number,
     default: 0,

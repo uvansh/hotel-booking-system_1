@@ -62,7 +62,7 @@ export async function GET(req) {
     const bookings = await Booking.find({ userId })
       .populate({
         path: 'hotelId',
-        select: 'name location price image',
+        select: 'name location price image discountPercentage',
         model: 'Hotel'
       })
       .sort({ createdAt: -1 });
@@ -75,13 +75,15 @@ export async function GET(req) {
         name: booking.hotelId.name || 'Unnamed Hotel',
         location: booking.hotelId.location || 'Location not specified',
         price: booking.hotelId.price || 0,
-        image: booking.hotelId.image || null
+        image: booking.hotelId.image || null,
+        discountPercentage: booking.hotelId.discountPercentage || 0
       } : {
         _id: null,
         name: 'Unnamed Hotel',
         location: 'Location not specified',
         price: 0,
-        image: null
+        image: null,
+        discountPercentage: 0
       };
 
       return {

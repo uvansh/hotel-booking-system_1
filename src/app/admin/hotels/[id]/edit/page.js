@@ -21,7 +21,8 @@ export default function EditHotel({ params }) {
     location: '',
     description: '',
     amenities: '',
-    rooms: []
+    rooms: [],
+    discountPercentage: 0
   });
 
   const { id } = use(params);
@@ -164,6 +165,21 @@ export default function EditHotel({ params }) {
                   required
                   min="0"
                   step="0.01"
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Discount Percentage
+                </label>
+                <input
+                  type="number"
+                  name="discountPercentage"
+                  value={hotel.discountPercentage}
+                  onChange={handleInputChange}
+                  min="0"
+                  max="100"
+                  step="1"
                   className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>

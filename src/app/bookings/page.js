@@ -267,7 +267,16 @@ export default function UserBookings() {
                         <DollarSign className="w-5 h-5 mr-2" />
                         <div>
                           <p className="text-sm font-medium text-gray-500">Price per night</p>
-                          <p>${booking.hotel?.price || 0}</p>
+                          <p>
+                            {booking.hotel?.discountPercentage > 0 ? (
+                              <>
+                                <span className="line-through text-gray-400 mr-2">${booking.hotel?.price || 0}</span>
+                                <span className="text-green-600">${Math.round(booking.hotel?.price * (1 - (booking.hotel?.discountPercentage || 0) / 100)) || 0}</span>
+                              </>
+                            ) : (
+                              `$${booking.hotel?.price || 0}`
+                            )}
+                          </p>
                         </div>
                       </div>
                     </div>

@@ -32,7 +32,15 @@ const HotelDetails = () => {
         throw new Error(data.error || 'Failed to fetch hotel details');
       }
 
-      setHotel(data);
+      // Calculate discounted price based on stored discount percentage
+      const discountedPrice = Math.round(data.price * (1 - (data.discountPercentage || 0) / 100));
+
+      setHotel({
+        ...data,
+        originalPrice: data.price,
+        discountedPrice,
+        discountPercentage: data.discountPercentage || 0
+      });
     } catch (err) {
       console.error('Error fetching hotel:', err);
       setError(err.message || 'Failed to load hotel details');
@@ -57,7 +65,7 @@ const HotelDetails = () => {
       const checkInDate = new Date(bookingData.checkIn);
       const checkOutDate = new Date(bookingData.checkOut);
       const nights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
-      const totalPrice = hotel.price * nights * bookingData.guests;
+      const totalPrice = hotel.discountedPrice * nights * bookingData.guests;
 
       const response = await fetch('/api/bookings', {
         method: 'POST',
@@ -119,7 +127,7 @@ const HotelDetails = () => {
     <div className="container mx-auto px-4 py-8">
 
       {/* Hero Section */}
-      <div className="relative h-[400px] w-full">
+      <div className="relative h-[400px] w-full rounded-xl overflow-hidden shadow-lg">
         {hotel.image ? (
           <Image
             src={hotel.image}
@@ -134,21 +142,27 @@ const HotelDetails = () => {
             <Building2 className="w-24 h-24 text-gray-400" />
           </div>
         )}
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6">
+          <h1 className="text-3xl font-bold text-white mb-2">{hotel.name}</h1>
+          <div className="flex items-center gap-2 text-white/90">
+            <MapPin className="w-5 h-5" />
+            <span>{hotel.location}</span>
+          </div>
+        </div>
       </div>
 
       {/* Main Content */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-8">
         {/* Left Column - Main Info */}
         <div className="md:col-span-2 space-y-8">
-
           {/* Description */}
-          <div className="bg-white p-6 rounded-lg shadow-md">
+          <div className="bg-white p-6 rounded-xl shadow-md">
             <h2 className="text-2xl font-semibold mb-4">About</h2>
             <p className="text-gray-600 leading-relaxed">{hotel.description}</p>
           </div>
 
           {/* Amenities */}
-          <div className="bg-white p-6 rounded-lg shadow-md">
+          <div className="bg-white p-6 rounded-xl shadow-md">
             <h2 className="text-2xl font-semibold mb-4">Amenities</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               {hotel.amenities?.map((amenity, index) => (
@@ -162,75 +176,92 @@ const HotelDetails = () => {
         </div>
 
         {/* Right Column - Booking Form */}
-        <div className="space-y-6">
+        <div className="bg-white p-6 rounded-xl shadow-md sticky top-8">
           {/* Price Card */}
-          <div className="bg-white p-6 rounded-lg shadow-md">
+          <div className="mb-6">
             <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center">
-                <DollarSign className="w-5 h-5 text-green-600 mr-1" />
-                <span className="text-2xl font-bold text-gray-900">${hotel.price}</span>
-                <span className="text-gray-500 ml-1">/night</span>
+              <div className="flex flex-col">
+                <div className="flex items-center">
+                  <span className="text-sm text-gray-400 line-through">${hotel.originalPrice}</span>
+                </div>
+                <div className="flex items-center bg-green-50 px-3 py-1 rounded-lg">
+                  <span className="text-3xl font-bold text-green-700">${hotel.discountedPrice}</span>
+                  <span className="text-sm text-green-600 ml-1">/night</span>
+                </div>
+                <div className="mt-1">
+                  <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                    Save {hotel.discountPercentage}%
+                  </span>
+                </div>
               </div>
               <div className="flex items-center">
                 <Star className="w-5 h-5 text-yellow-400 mr-1" />
                 <span className="text-gray-600">{hotel.rating || 'No rating'}</span>
               </div>
             </div>
-
-            {/* Booking Form */}
-            <form onSubmit={handleBooking} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Check-in Date
-                </label>
-                <input
-                  type="date"
-                  value={bookingData.checkIn}
-                  onChange={(e) => setBookingData({ ...bookingData, checkIn: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Check-out Date
-                </label>
-                <input
-                  type="date"
-                  value={bookingData.checkOut}
-                  onChange={(e) => setBookingData({ ...bookingData, checkOut: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Number of Guests
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    min="1"
-                    value={bookingData.guests}
-                    onChange={(e) => setBookingData({ ...bookingData, guests: parseInt(e.target.value) })}
-                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
-                  <Users className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                className="w-full bg-blue-600 text-white py-3 rounded-md hover:bg-blue-700 transition-colors"
-                disabled={!isSignedIn}
-              >
-                {isSignedIn ? 'Book Now' : 'Sign in to Book'}
-              </button>
-            </form>
           </div>
+
+          {/* Booking Form */}
+          <form onSubmit={handleBooking} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Check-in Date
+              </label>
+              <input
+                type="date"
+                value={bookingData.checkIn}
+                onChange={(e) => setBookingData({ ...bookingData, checkIn: e.target.value })}
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+                min={new Date().toISOString().split('T')[0]}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Check-out Date
+              </label>
+              <input
+                type="date"
+                value={bookingData.checkOut}
+                onChange={(e) => setBookingData({ ...bookingData, checkOut: e.target.value })}
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+                min={bookingData.checkIn || new Date().toISOString().split('T')[0]}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Number of Guests
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  min="1"
+                  value={bookingData.guests}
+                  onChange={(e) => setBookingData({ ...bookingData, guests: parseInt(e.target.value) })}
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+                <Users className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              </div>
+            </div>
+
+            {error && (
+              <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm">
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={!isSignedIn}
+            >
+              {isSignedIn ? 'Book Now' : 'Sign in to Book'}
+            </button>
+          </form>
         </div>
       </div>
     </div>

@@ -43,6 +43,18 @@ export async function PATCH(request, { params }) {
     await connectDB();
     const body = await request.json();
     
+    // Validate discount percentage if provided
+    if (body.discountPercentage !== undefined) {
+      const discount = Number(body.discountPercentage);
+      if (isNaN(discount) || discount < 0 || discount > 100) {
+        return NextResponse.json(
+          { error: 'Discount percentage must be between 0 and 100' },
+          { status: 400 }
+        );
+      }
+      body.discountPercentage = discount;
+    }
+    
     const hotel = await Hotel.findByIdAndUpdate(
       id,
       body,

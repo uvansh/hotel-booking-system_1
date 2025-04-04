@@ -18,7 +18,8 @@ export default function AddHotel() {
     location: '',
     description: '',
     amenities: '',
-    rooms: []
+    rooms: [],
+    discountPercentage: 0
   });
 
   useEffect(() => {
@@ -92,7 +93,7 @@ export default function AddHotel() {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="container mx-auto px-4">
-        <div className="flex items-center gap-4 mb-8">
+        <div className="flex items-center gap-2 mb-6">
           <button
             onClick={() => router.push('/admin')}
             className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
@@ -100,9 +101,8 @@ export default function AddHotel() {
             <ArrowLeft className="w-5 h-5" />
             <span>Back to Dashboard</span>
           </button>
-          <h1 className="text-3xl font-bold text-gray-900">Add New Hotel</h1>
         </div>
-
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">Add New Hotel</h1>
         <div className="bg-white rounded-lg shadow-md p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -131,6 +131,21 @@ export default function AddHotel() {
                   required
                   min="0"
                   step="0.01"
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Discount Percentage
+                </label>
+                <input
+                  type="number"
+                  name="discountPercentage"
+                  value={hotel.discountPercentage}
+                  onChange={handleInputChange}
+                  min="0"
+                  max="100"
+                  step="1"
                   className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>

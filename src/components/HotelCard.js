@@ -26,7 +26,7 @@ export default function HotelCard({ hotel }) {
       const checkInDate = new Date(bookingData.checkIn);
       const checkOutDate = new Date(bookingData.checkOut);
       const nights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
-      const totalPrice = hotel.price * nights * bookingData.guests;
+      const totalPrice = hotel.discountedPrice * nights * bookingData.guests;
 
       const response = await fetch('/api/bookings', {
         method: 'POST',
