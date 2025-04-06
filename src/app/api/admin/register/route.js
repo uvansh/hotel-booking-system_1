@@ -1,5 +1,5 @@
 import connectDB from '@/lib/mongodb';
-import getAdminModel from '@/models/Admin';
+import Admin from '@/models/Admin';
 import { getAuth } from '@clerk/nextjs/server';
 
 export async function POST(req) {
@@ -36,7 +36,6 @@ export async function POST(req) {
     }
 
     await connectDB();
-    const Admin = getAdminModel();
 
     // Check if user is already an admin
     const existingAdmin = await Admin.findOne({ userId });

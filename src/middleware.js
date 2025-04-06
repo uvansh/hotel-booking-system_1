@@ -1,12 +1,11 @@
 import { clerkMiddleware } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
-import getAdminModel from "@/models/Admin";
+import Admin from "@/models/Admin";
 
 async function checkAdminStatus(userId) {
   try {
     await connectDB();
-    const Admin = getAdminModel();
     const admin = await Admin.findOne({ userId });
     return !!admin;
   } catch (error) {

@@ -2,12 +2,11 @@ import { NextResponse } from 'next/server';
 import { getAuth } from '@clerk/nextjs/server';
 import connectDB from '@/lib/mongodb';
 import Destination from '@/models/Destination';
-import getAdminModel from '@/models/Admin';
+import Admin from '@/models/Admin';
 
 // Helper function to check if user is admin
 const isAdmin = async (userId) => {
   await connectDB();
-  const Admin = getAdminModel();
   const admin = await Admin.findOne({ userId });
   return !!admin;
 };
