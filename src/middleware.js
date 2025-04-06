@@ -1,50 +1,71 @@
 import { clerkMiddleware } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
+import connectDB from "@/lib/mongodb";
+import getAdminModel from "@/models/Admin";
 
-// This example protects all routes including api/trpc routes
-// Please edit this to allow other routes to be public as needed.
-// See https://clerk.com/docs/references/nextjs/auth-middleware for more information about configuring your middleware
+async function checkAdminStatus(userId) {
+  try {
+    await connectDB();
+    const Admin = getAdminModel();
+    const admin = await Admin.findOne({ userId });
+    return !!admin;
+  } catch (error) {
+    console.error('Error checking admin status:', error);
+    return false;
+  }
+}
+
 export default clerkMiddleware({
   // Routes that can be accessed while signed out
   publicRoutes: [
     "/",
     "/api/hotels",
-    "/sign-up",
-    "/admin/signup(.*)",
+    "/sign-in(.*)",
+    "/sign-up(.*)",
+    "/admin/signup",
+    "/api/admin/validate",
+    "/api/admin/register",
   ],
+
   // Routes that can always be accessed, and have
   // no authentication information
   ignoredRoutes: ["/api/webhook"],
-  // Routes that can only be accessed by admins
-  afterAuth(auth, req) {
+
+  async afterAuth(auth, req) {
+    // If the user is not signed in and trying to access a protected route,
+    // redirect them to sign in
+    if (!auth.userId && !req.nextUrl.pathname.startsWith('/')) {
+      const signInUrl = new URL('/sign-in', req.url);
+      signInUrl.searchParams.set('redirect_url', req.url);
+      return NextResponse.redirect(signInUrl);
+    }
+
     // Handle admin routes
-    if (req.nextUrl.pathname.startsWith('/admin') && 
-        !req.nextUrl.pathname.startsWith('/admin/signup')) {
+    if (req.nextUrl.pathname.startsWith('/admin') || 
+        req.nextUrl.pathname.startsWith('/api/admin')) {
+      // Skip auth check for public admin routes
+      if (req.nextUrl.pathname === '/admin/signup' ||
+          req.nextUrl.pathname === '/api/admin/validate' ||
+          req.nextUrl.pathname === '/api/admin/register') {
+        return NextResponse.next();
+      }
+
+      // For all other admin routes, check if user is admin
       if (!auth.userId) {
-        return Response.redirect(new URL('/admin/signup', req.url));
+        return NextResponse.redirect(new URL('/sign-in', req.url));
       }
-      
-      // Check if user is admin
-      const adminUserIds = process.env.ADMIN_USER_IDS?.split(',') || [];
-      if (!adminUserIds.includes(auth.userId)) {
-        return Response.redirect(new URL('/', req.url));
+
+      const isAdmin = await checkAdminStatus(auth.userId);
+      if (!isAdmin) {
+        // If not admin, redirect to home page
+        return NextResponse.redirect(new URL('/', req.url));
       }
     }
 
-    // Handle regular user routes
-    if (req.nextUrl.pathname.startsWith('/sign-up') && auth.userId) {
-      return Response.redirect(new URL('/', req.url));
-    }
-
-    // Handle admin sign-up route
-    if (req.nextUrl.pathname === '/admin/signup' && auth.userId) {
-      return Response.redirect(new URL('/admin', req.url));
-    }
+    return NextResponse.next();
   }
 });
 
 export const config = {
-  // Protects all routes, including api/trpc
-  // See https://clerk.com/docs/references/nextjs/auth-middleware
-  // for more information about configuring your middleware
   matcher: ["/((?!.+\\.[\\w]+$|_next).*)", "/", "/(api|trpc)(.*)"],
 }; 

@@ -2,6 +2,15 @@ import { NextResponse } from 'next/server';
 import { getAuth } from '@clerk/nextjs/server';
 import connectDB from '@/lib/mongodb';
 import Destination from '@/models/Destination';
+import getAdminModel from '@/models/Admin';
+
+// Helper function to check if user is admin
+const isAdmin = async (userId) => {
+  await connectDB();
+  const Admin = getAdminModel();
+  const admin = await Admin.findOne({ userId });
+  return !!admin;
+};
 
 export async function GET() {
   try {
@@ -25,9 +34,15 @@ export async function POST(request) {
   try {
     const { userId } = await getAuth(request);
     
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     // Check if user is admin
-    const adminUserIds = process.env.NEXT_PUBLIC_ADMIN_USER_IDS?.split(',') || [];
-    if (!adminUserIds.includes(userId)) {
+    if (!await isAdmin(userId)) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }

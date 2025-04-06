@@ -28,13 +28,28 @@ export default function AddHotel() {
         router.push('/admin/signup');
       } else {
         // Check if user is admin
-        const adminUserIds = process.env.NEXT_PUBLIC_ADMIN_USER_IDS?.split(',') || [];
-        if (!adminUserIds.includes(userId)) {
-          router.push('/');
-        }
+        checkAdminStatus();
       }
     }
   }, [isLoaded, isSignedIn, userId, router]);
+
+  const checkAdminStatus = async () => {
+    try {
+      const response = await fetch('/api/admin/check', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Not an admin');
+      }
+    } catch (error) {
+      console.error('Admin check failed:', error);
+      router.push('/');
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();

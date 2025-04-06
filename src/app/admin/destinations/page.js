@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Plus, Trash2, Search, SlidersHorizontal, Edit2 } from 'lucide-react';
 
 export default function AdminDestinations() {
-  const { isSignedIn, userId } = useAuth();
+  const { isLoaded, isSignedIn, userId } = useAuth();
   const router = useRouter();
   const [destinations, setDestinations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -31,15 +31,35 @@ export default function AdminDestinations() {
   const [editingId, setEditingId] = useState(null);
 
   useEffect(() => {
-    // Check if user is admin
-    const adminUserIds = process.env.NEXT_PUBLIC_ADMIN_USER_IDS?.split(',') || [];
-    if (!isSignedIn || !adminUserIds.includes(userId)) {
-      router.push('/');
-      return;
+    if (isLoaded) {
+      if (!isSignedIn) {
+        router.push('/admin/signup');
+      } else {
+        checkAdminStatus();
+      }
     }
+  }, [isLoaded, isSignedIn, userId, router]);
 
-    fetchDestinations();
-  }, [isSignedIn, userId, router]);
+  const checkAdminStatus = async () => {
+    try {
+      const response = await fetch('/api/admin/check', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Not an admin');
+      }
+
+      // If we get here, user is admin
+      fetchDestinations();
+    } catch (error) {
+      console.error('Admin check failed:', error);
+      router.push('/');
+    }
+  };
 
   const fetchDestinations = async () => {
     try {
