@@ -3,7 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
-import { Calendar, Clock, MapPin, Users, CheckCircle, Building2 } from 'lucide-react';
+import { Star, Calendar, Clock, MapPin, Users, Building2, DollarSign } from 'lucide-react';
+import Link from 'next/link';
+import Image from 'next/image';
 
 export default function ManageBookings() {
   const { isLoaded, userId, isSignedIn } = useAuth();
@@ -13,25 +15,38 @@ export default function ManageBookings() {
   const [error, setError] = useState(null);
   const [updatingStatus, setUpdatingStatus] = useState({});
   const [statusError, setStatusError] = useState({});
-  const [filter, setFilter] = useState('all'); // all, pending, completed, cancelled
-  const [cancellingBooking, setCancellingBooking] = useState({});
-  const [cancellationError, setCancellationError] = useState({});
+  const [filter, setFilter] = useState('all');
 
   useEffect(() => {
     if (isLoaded) {
       if (!isSignedIn) {
         router.push('/admin/signup');
       } else {
-        // Check if user is admin
-        const adminUserIds = process.env.NEXT_PUBLIC_ADMIN_USER_IDS?.split(',') || [];
-        if (!adminUserIds.includes(userId)) {
-          router.push('/');
-        } else {
-          fetchBookings();
-        }
+        checkAdminStatus();
       }
     }
   }, [isLoaded, isSignedIn, userId, router]);
+
+  const checkAdminStatus = async () => {
+    try {
+      const response = await fetch('/api/admin/check', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Not an admin');
+      }
+
+      // If we get here, user is admin
+      fetchBookings();
+    } catch (error) {
+      console.error('Admin check failed:', error);
+      router.push('/');
+    }
+  };
 
   const fetchBookings = async () => {
     try {
@@ -40,9 +55,6 @@ export default function ManageBookings() {
       
       const response = await fetch('/api/admin/bookings');
       const data = await response.json();
-      
-      console.log('API Response:', response);
-      console.log('Bookings Data:', data);
       
       if (!response.ok) {
         throw new Error(data.error || 'Failed to fetch bookings');
@@ -55,8 +67,8 @@ export default function ManageBookings() {
       // Transform the data to match the expected structure
       const transformedBookings = data.map(booking => ({
         ...booking,
-        guests: booking.numberOfGuests, // Map numberOfGuests to guests
-        hotel: booking.hotelId // Map hotelId to hotel
+        guests: booking.numberOfGuests,
+        hotel: booking.hotelId
       }));
 
       setBookings(transformedBookings);
@@ -97,38 +109,6 @@ export default function ManageBookings() {
     }
   };
 
-  const handleCancelBooking = async (bookingId) => {
-    setCancellingBooking(prev => ({ ...prev, [bookingId]: true }));
-    setCancellationError(prev => ({ ...prev, [bookingId]: null }));
-
-    try {
-      const response = await fetch('/api/bookings', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          bookingId,
-          status: 'cancelled' 
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to cancel booking');
-      }
-
-      // Refresh bookings to get updated status
-      fetchBookings();
-    } catch (err) {
-      console.error('Cancellation error:', err);
-      setCancellationError(prev => ({ ...prev, [bookingId]: err.message }));
-    } finally {
-      setCancellingBooking(prev => ({ ...prev, [bookingId]: false }));
-    }
-  };
-
   const filteredBookings = bookings.filter(booking => {
     if (filter === 'all') return true;
     return booking.status === filter;
@@ -142,49 +122,39 @@ export default function ManageBookings() {
     );
   }
 
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md">
+          {error}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Manage Bookings</h1>
+        <h1 className="text-3xl font-bold text-gray-900">Manage Bookings</h1>
         <div className="flex gap-4">
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            className="px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="all">All Bookings</option>
             <option value="pending">Pending</option>
             <option value="completed">Completed</option>
             <option value="cancelled">Cancelled</option>
           </select>
+          <Link
+            href="/admin"
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+          >
+            Back to Dashboard
+          </Link>
         </div>
       </div>
-
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md mb-6">
-          <p className="font-medium">Error:</p>
-          <p>{error}</p>
-        </div>
-      )}
-
-      {!loading && bookings.length === 0 && (
-        <div className="text-center py-12">
-          <h3 className="text-lg font-medium text-gray-900">No bookings found</h3>
-          <p className="mt-2 text-gray-500">
-            {filter === 'all' 
-              ? 'There are no bookings to manage.'
-              : `No ${filter} bookings found.`}
-          </p>
-          <div className="mt-4">
-            <button
-              onClick={fetchBookings}
-              className="text-blue-600 hover:text-blue-800 underline"
-            >
-              Try refreshing
-            </button>
-          </div>
-        </div>
-      )}
 
       {loading ? (
         <div className="flex justify-center items-center min-h-[200px]">
@@ -219,84 +189,86 @@ export default function ManageBookings() {
                     `$${booking.hotel?.price || 0}`
                   )}/night
                 </div>
-                <div className={`absolute top-2 left-2 px-2 py-1 rounded-full text-sm font-medium ${
-                  booking.status === 'completed' ? 'bg-green-100 text-green-800' :
-                  booking.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                  'bg-yellow-100 text-yellow-800'
-                }`}>
-                  {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
-                </div>
               </div>
-              <div className="p-4">
-                <h3 className="text-lg font-semibold mb-2">
-                  {booking.hotel?.name || 'Unnamed Hotel'}
-                </h3>
-                <div className="space-y-2 text-gray-600">
-                  <div className="flex items-center">
-                    <MapPin className="w-4 h-4 mr-2" />
-                    <span>{booking.hotel?.location || 'Location not specified'}</span>
-                  </div>
-                  <div className="flex items-center">
+              <div className="p-6">
+                <h3 className="text-xl font-semibold mb-2">{booking.hotel?.name || 'Unnamed Hotel'}</h3>
+                <div className="flex items-center text-gray-600 mb-2">
+                  <MapPin className="w-4 h-4 mr-2" />
+                  <span>{booking.hotel?.location || 'Location not specified'}</span>
+                </div>
+                <div className="space-y-2 mb-4">
+                  <div className="flex items-center text-gray-600">
                     <Calendar className="w-4 h-4 mr-2" />
-                    <span>
-                      {new Date(booking.checkIn).toLocaleDateString()} -{' '}
-                      {new Date(booking.checkOut).toLocaleDateString()}
-                    </span>
+                    <span>Check-in: {new Date(booking.checkIn).toLocaleDateString()}</span>
                   </div>
-                  <div className="flex items-center">
+                  <div className="flex items-center text-gray-600">
+                    <Calendar className="w-4 h-4 mr-2" />
+                    <span>Check-out: {new Date(booking.checkOut).toLocaleDateString()}</span>
+                  </div>
+                  <div className="flex items-center text-gray-600">
                     <Users className="w-4 h-4 mr-2" />
-                    <span>{booking.guests} guests</span>
+                    <span>{booking.guests} {booking.guests === 1 ? 'guest' : 'guests'}</span>
                   </div>
-                  <div className="flex items-center">
-                    <Clock className="w-4 h-4 mr-2" />
-                    <span>Booked on {new Date(booking.createdAt).toLocaleDateString()}</span>
+                  <div className="flex items-center text-gray-600">
+                    <DollarSign className="w-4 h-4 mr-2" />
+                    <span>Total: ${booking.totalPrice}</span>
                   </div>
                 </div>
-
-                {booking.status === 'pending' && (
-                  <div className="mt-4 pt-4 border-t border-gray-200 space-y-3">
-                    <button
-                      onClick={() => handleStatusUpdate(booking._id, 'completed')}
-                      disabled={updatingStatus[booking._id]}
-                      className="w-full flex items-center justify-center gap-2 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {updatingStatus[booking._id] ? (
-                        'Updating...'
-                      ) : (
-                        <>
-                          <CheckCircle className="w-4 h-4" />
-                          Mark as Completed
-                        </>
-                      )}
-                    </button>
-                    
-                    <button
-                      onClick={() => handleCancelBooking(booking._id)}
-                      disabled={cancellingBooking[booking._id]}
-                      className="w-full flex items-center justify-center gap-2 bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {cancellingBooking[booking._id] ? (
-                        'Cancelling...'
-                      ) : (
-                        <>
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                          </svg>
-                          Cancel Booking
-                        </>
-                      )}
-                    </button>
-                    {statusError[booking._id] && (
-                      <p className="text-red-500 text-sm">
-                        {statusError[booking._id]}
-                      </p>
-                    )}
-                    {cancellationError[booking._id] && (
-                      <p className="text-red-500 text-sm">
-                        {cancellationError[booking._id]}
-                      </p>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    booking.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                    booking.status === 'completed' ? 'bg-green-100 text-green-800' :
+                    'bg-red-100 text-red-800'
+                  }`}>
+                    {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    {booking.status === 'pending' && (
+                      <>
+                        <button
+                          onClick={() => handleStatusUpdate(booking._id, 'completed')}
+                          disabled={updatingStatus[booking._id]}
+                          className="flex items-center gap-2 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md text-sm"
+                        >
+                          {updatingStatus[booking._id] ? (
+                            <>
+                              <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                              <span>Updating...</span>
+                            </>
+                          ) : (
+                            <>
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                              <span>Approve</span>
+                            </>
+                          )}
+                        </button>
+                        <button
+                          onClick={() => handleStatusUpdate(booking._id, 'cancelled')}
+                          disabled={updatingStatus[booking._id]}
+                          className="flex items-center gap-2 px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md text-sm"
+                        >
+                          {updatingStatus[booking._id] ? (
+                            <>
+                              <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                              <span>Updating...</span>
+                            </>
+                          ) : (
+                            <>
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                              </svg>
+                              <span>Reject</span>
+                            </>
+                          )}
+                        </button>
+                      </>
                     )}
                   </div>
+                </div>
+                {statusError[booking._id] && (
+                  <p className="text-red-500 text-sm mt-2">{statusError[booking._id]}</p>
                 )}
               </div>
             </div>
