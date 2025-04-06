@@ -12,9 +12,47 @@ export async function POST(req) {
     }
 
     const body = await req.json();
-    const { hotelId, checkIn, checkOut, guests } = body;
+    console.log('Received booking request:', body);
+
+    // Destructure and validate each field
+    const hotelId = body.hotelId;
+    const checkIn = body.checkIn;
+    const checkOut = body.checkOut;
+    const numberOfGuests = body.numberOfGuests;
+    const totalPrice = body.totalPrice;
+
+    console.log('Validating fields:', {
+      hotelId,
+      checkIn,
+      checkOut,
+      numberOfGuests,
+      totalPrice
+    });
+
+    // Validate required fields
+    if (!hotelId) {
+      return NextResponse.json({ error: 'Hotel ID is required' }, { status: 400 });
+    }
+    if (!checkIn) {
+      return NextResponse.json({ error: 'Check-in date is required' }, { status: 400 });
+    }
+    if (!checkOut) {
+      return NextResponse.json({ error: 'Check-out date is required' }, { status: 400 });
+    }
+    if (!numberOfGuests) {
+      return NextResponse.json({ error: 'Number of guests is required' }, { status: 400 });
+    }
+    if (!totalPrice) {
+      return NextResponse.json({ error: 'Total price is required' }, { status: 400 });
+    }
 
     await connectDB();
+
+    // Check if hotel exists
+    const hotel = await Hotel.findById(hotelId);
+    if (!hotel) {
+      return NextResponse.json({ error: 'Hotel not found' }, { status: 404 });
+    }
 
     // Check for existing booking with same dates and hotel
     const existingBooking = await Booking.findOne({
@@ -34,8 +72,12 @@ export async function POST(req) {
 
     // Create new booking
     const booking = await Booking.create({
-      ...body,
+      hotelId,
       userId,
+      checkIn,
+      checkOut,
+      numberOfGuests,
+      totalPrice,
       status: 'pending'
     });
 
@@ -91,7 +133,7 @@ export async function GET(req) {
         hotel: hotelData,
         checkIn: booking.checkIn,
         checkOut: booking.checkOut,
-        guests: booking.numberOfGuests, // Use numberOfGuests from the model
+        guests: booking.numberOfGuests,
         status: booking.status,
         createdAt: booking.createdAt
       };

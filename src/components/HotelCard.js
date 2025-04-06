@@ -22,24 +22,38 @@ export default function HotelCard({ hotel }) {
     setError(null);
 
     try {
+      // Validate required fields
+      if (!bookingData.checkIn || !bookingData.checkOut || !bookingData.guests) {
+        throw new Error('Please fill in all required fields');
+      }
+
       // Calculate total price
       const checkInDate = new Date(bookingData.checkIn);
       const checkOutDate = new Date(bookingData.checkOut);
       const nights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
-      const totalPrice = hotel.discountedPrice * nights * bookingData.guests;
+      
+      // Calculate price with discount if applicable
+      const basePrice = hotel.price;
+      const discount = hotel.discountPercentage || 0;
+      const discountedPrice = basePrice * (1 - discount / 100);
+      const totalPrice = discountedPrice * nights * bookingData.guests;
+
+      const bookingRequest = {
+        hotelId: hotel._id,
+        checkIn: new Date(bookingData.checkIn).toISOString(),
+        checkOut: new Date(bookingData.checkOut).toISOString(),
+        numberOfGuests: parseInt(bookingData.guests),
+        totalPrice: Math.round(totalPrice * 100) / 100 // Round to 2 decimal places
+      };
+
+      console.log('Sending booking request:', bookingRequest);
 
       const response = await fetch('/api/bookings', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          hotelId: hotel._id,
-          checkIn: bookingData.checkIn,
-          checkOut: bookingData.checkOut,
-          numberOfGuests: bookingData.guests,
-          totalPrice,
-        }),
+        body: JSON.stringify(bookingRequest),
       });
 
       const data = await response.json();
@@ -62,6 +76,7 @@ export default function HotelCard({ hotel }) {
         setSuccess(false);
       }, 2000);
     } catch (err) {
+      console.error('Booking error:', err);
       setError(err.message || 'Failed to create booking. Please try again.');
     } finally {
       setIsSubmitting(false);
