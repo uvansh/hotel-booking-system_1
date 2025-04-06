@@ -1,11 +1,15 @@
 import connectDB from '@/lib/mongodb';
-import Admin from '@/models/Admin';
+import getAdminModel from '@/models/Admin';
 import { getAuth } from '@clerk/nextjs/server';
+
+export const runtime = 'nodejs';
 
 export async function POST(req) {
   try {
     const { userId, secretCode } = await req.json();
     const { userId: authUserId } = getAuth(req);
+
+    console.log('Admin registration attempt:', { userId, authUserId });
 
     if (!authUserId) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
@@ -36,9 +40,12 @@ export async function POST(req) {
     }
 
     await connectDB();
+    const Admin = getAdminModel();
 
     // Check if user is already an admin
     const existingAdmin = await Admin.findOne({ userId });
+    console.log('Existing admin check:', { userId, existingAdmin });
+
     if (existingAdmin) {
       return new Response(JSON.stringify({ error: 'User is already an admin' }), {
         status: 400,
@@ -51,6 +58,8 @@ export async function POST(req) {
       userId,
       createdAt: new Date(),
     });
+
+    console.log('New admin created:', admin);
 
     return new Response(JSON.stringify({ success: true, admin }), {
       status: 200,

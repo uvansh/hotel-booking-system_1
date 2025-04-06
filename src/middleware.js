@@ -1,18 +1,5 @@
 import { clerkMiddleware } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import connectDB from "@/lib/mongodb";
-import Admin from "@/models/Admin";
-
-async function checkAdminStatus(userId) {
-  try {
-    await connectDB();
-    const admin = await Admin.findOne({ userId });
-    return !!admin;
-  } catch (error) {
-    console.error('Error checking admin status:', error);
-    return false;
-  }
-}
 
 export default clerkMiddleware({
   // Routes that can be accessed while signed out
@@ -54,11 +41,8 @@ export default clerkMiddleware({
         return NextResponse.redirect(new URL('/sign-in', req.url));
       }
 
-      const isAdmin = await checkAdminStatus(auth.userId);
-      if (!isAdmin) {
-        // If not admin, redirect to home page
-        return NextResponse.redirect(new URL('/', req.url));
-      }
+      // Let the API routes handle the admin check
+      return NextResponse.next();
     }
 
     return NextResponse.next();

@@ -12,7 +12,12 @@ const adminSchema = new mongoose.Schema({
   }
 });
 
-// Create the model directly instead of using a function
-const Admin = mongoose.models.Admin || mongoose.model('Admin', adminSchema);
+// Create a function to get the Admin model
+const getAdminModel = () => {
+  if (mongoose.models.Admin) {
+    return mongoose.models.Admin;
+  }
+  return mongoose.model('Admin', adminSchema);
+};
 
-export default Admin; 
+export default getAdminModel; 

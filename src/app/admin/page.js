@@ -37,22 +37,21 @@ export default function AdminDashboard() {
 
   const checkAdminStatus = async () => {
     try {
-      const response = await fetch('/api/admin/check', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
+      console.log('Checking admin status for user:', userId);
+      const response = await fetch('/api/admin/check');
+      
       if (!response.ok) {
-        throw new Error('Not an admin');
+        console.log('User is not an admin, redirecting to home');
+        router.push('/');
+        return;
       }
 
-      // If we get here, user is admin
-      fetchHotels();
-      fetchDestinations();
+      console.log('User is admin, loading dashboard');
+      await Promise.all([fetchHotels(), fetchDestinations()]);
+      setLoading(false);
     } catch (error) {
-      console.error('Admin check failed:', error);
+      console.error('Error checking admin status:', error);
+      setError('Failed to verify admin status');
       router.push('/');
     }
   };
